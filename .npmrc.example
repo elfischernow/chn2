@@ -1,0 +1,3 @@
+@changenow:registry=https://gitlab.qetuoadgjl.com/api/v4/packages/npm/
+# Auth token must live in ~/.npmrc (never commit tokens). Format:
+# //gitlab.qetuoadgjl.com/api/v4/packages/npm/:_authToken=glpat-XXXXX

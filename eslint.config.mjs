@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Reference SPAs/repos kept for porting parity — not part of the
+    // current product. Linting them with our config produces thousands
+    // of unrelated errors and drowns the real CI signal.
+    "legacy/**",
+    "legacy-projects/**",
   ]),
 ]);
 

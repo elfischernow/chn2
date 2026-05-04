@@ -1,0 +1,22 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  min-width: 200px;
+}
+
+.email {
+  padding: 8px 14px 12px;
+  font-size: var(--Typography-Size-s);
+  color: var(--Text-colors-Text-Secondary);
+  border-bottom: 1px solid var(--dropdown-border);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,128 @@
+.hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+  margin: 16px 0 40px;
+}
+
+@media (min-width: 920px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+}
+
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.iconRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconArrow {
+  font-size: 24px;
+  color: var(--ink-3);
+  font-weight: 300;
+}
+
+.title {
+  font-family: var(--chn-font-flex), var(--chn-font-sans), system-ui, sans-serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.5;
+  font-size: 16px;
+  max-width: 520px;
+}
+
+.appLinks {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.appIconLink {
+  display: inline-flex;
+  border-radius: 999px;
+  transition: transform 150ms, opacity 150ms;
+  line-height: 0;
+}
+
+.appIconLink:hover {
+  transform: translateY(-1px);
+  opacity: 0.85;
+}
+
+.appIconLink img {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.heroRight {
+  position: relative;
+  min-width: 0;
+}
+
+.widgetSkeleton {
+  min-height: 420px;
+  border-radius: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+}
+
+.heroFooter {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.payStrip,
+.trustpilotStrip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper-2);
+  transition: background 150ms;
+}
+
+.payStrip:hover,
+.trustpilotStrip:hover {
+  background: var(--paper-3);
+}
+
+.payIcons {
+  display: inline-block;
+  height: 22px;
+  width: auto;
+  vertical-align: middle;
+  filter: grayscale(0.15);
+  opacity: 0.85;
+}

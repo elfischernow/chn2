@@ -4,23 +4,48 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:i18n && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test --test-reporter spec lib/**/*.test.ts",
+    "build:i18n": "node scripts/fetch-i18n.mjs",
+    "snapshot:currencies": "node scripts/snapshot-currencies.mjs",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
+    "@walletconnect/ethereum-provider": "^2.23.9",
+    "classnames": "^2.5.1",
+    "ioredis": "^5.10.1",
+    "js-cookie": "^2.2.0",
+    "marked": "^18.0.3",
     "next": "16.2.4",
+    "qrcode.react": "^1.0.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-popper-tooltip": "^4.4.2",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
+    "@types/qrcode.react": "^1.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "qrcode.react": {
+      "react": "$react"
+    }
   }
 }

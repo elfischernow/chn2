@@ -1,0 +1,120 @@
+.settingsDropdown {
+  min-width: 240px;
+  padding: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--Text-colors-Text-Primary);
+  font-size: var(--Typography-Size-m);
+  line-height: var(--Typography-Line-height-s);
+  font-weight: 400;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.row:hover {
+  background: var(--dropdown-hover-bg);
+}
+
+.rowMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--Text-colors-Text-Secondary);
+  font-size: var(--Typography-Size-s);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--Text-colors-Text-Secondary);
+}
+
+.themeIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--BG-Secondary);
+  color: var(--Text-colors-Text-Primary);
+}
+
+.themeIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--Text-colors-Text-Secondary);
+  font-size: var(--Typography-Size-s);
+  font-weight: 400;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+
+.backBtn:hover {
+  color: var(--Text-colors-Text-Primary);
+}
+
+.langList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Fit all 16 locales on a typical viewport; fall back to scroll on
+     short screens. */
+  max-height: min(620px, calc(100vh - 160px));
+  overflow-y: auto;
+}
+
+.langItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--Text-colors-Text-Primary);
+  font-size: var(--Typography-Size-m);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.langItem:hover {
+  background: var(--dropdown-hover-bg);
+}
+
+.langItem.active {
+  color: #00C26F;
+}
+
+.langName {
+  flex: 1 1 auto;
+}
+
+.checkmark {
+  flex-shrink: 0;
+  color: #00C26F;
+}

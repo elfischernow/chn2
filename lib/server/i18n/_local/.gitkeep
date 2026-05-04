@@ -1,0 +1,4 @@
+# Per-locale JSON overrides for keys not yet in Strapi. Format: same flat
+# {key: value} as the generated dicts. Merged on top of API output by
+# scripts/fetch-i18n.mjs at build time. Delete entries here once the keys
+# land in admin so we have a single source of truth again.

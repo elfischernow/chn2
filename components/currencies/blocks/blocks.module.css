@@ -1,0 +1,705 @@
+.section {
+  margin: 48px 0;
+}
+
+.sectionTitle {
+  font-family: var(--chn-font-flex), var(--chn-font-sans), system-ui, sans-serif;
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 16px;
+  color: var(--ink);
+}
+
+.sectionDesc {
+  color: var(--ink-2);
+  line-height: 1.55;
+  font-size: 16px;
+  max-width: 720px;
+  margin: 0 0 12px;
+}
+
+/* What-is + Why-exchange + Start-exchange share a card style */
+.proseCard {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.prose {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.prose p + p {
+  margin-top: 12px;
+}
+
+.proseH3 {
+  margin: 24px 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  scroll-margin-top: 80px;
+}
+
+.proseH3:first-child {
+  margin-top: 0;
+}
+
+/* FAQ */
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faqItem {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.faqSummary {
+  padding: 14px 18px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.faqSummary::-webkit-details-marker {
+  display: none;
+}
+
+.faqSummary::after {
+  content: '+';
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--ink-3);
+  flex-shrink: 0;
+  transition: transform 200ms;
+}
+
+.faqItem[open] .faqSummary::after {
+  transform: rotate(45deg);
+}
+
+.faqAnswer {
+  padding: 0 18px 16px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+/* How-to */
+.steps {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stepTitle {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.stepText {
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Embedded calculator slot */
+.calcWrap {
+  /* The widget owns its own border + background; just provide breathing room. */
+}
+
+.calcSkeleton {
+  min-height: 260px;
+  border-radius: 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+}
+
+/* CTA / start-exchange */
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--paper-2), var(--paper));
+  border: 1px solid var(--line);
+}
+
+.ctaText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ctaTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ctaSub {
+  color: var(--ink-3);
+  font-size: 15px;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 150ms;
+}
+
+.ctaButton:hover {
+  background: var(--accent-hover, var(--accent));
+}
+
+/* Advantages bullet grid */
+.bullets {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .bullets {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.bullet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.bulletTitle {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 16px;
+  margin: 0;
+}
+
+.bulletText {
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* ─── Pill list (popular-fiat-markets, most-visited-currencies) ─────
+   Compact rounded buttons with the CMS-supplied currency icon, in a
+   wrapping flex grid. Port of the legacy `popular-fiat-pair` and
+   `most-visited-currency-item` styles. */
+.pillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 1100px;
+}
+.pillItem {
+  list-style: none;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 8px 20px 8px 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 40px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 150ms ease, background 150ms ease;
+  white-space: nowrap;
+}
+.pill:hover {
+  border-color: var(--accent, #00c26f);
+}
+.pillTicker {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.pillName {
+  font-size: 14px;
+  color: var(--ink);
+}
+.pillTickerMuted {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.pillSwitcher {
+  width: 28px;
+  height: 28px;
+  margin: 0 -2px;
+  flex-shrink: 0;
+}
+
+/* ─── ExchangeAdvantages (Why-exchange) ──────────────────────────────
+   4-stat card layout with marketing illustration on the right. Port of
+   the legacy `why-exchange` block (the "98% Triumph Rate / 2 min /
+   5M+ / 1267" tiles + globe-and-cars png). */
+.advCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+  gap: 32px;
+  align-items: center;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.advCopy h3 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.advCopy p {
+  margin: 0 0 24px;
+  color: var(--ink-3);
+  max-width: 520px;
+  line-height: 1.55;
+}
+.advStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 36px;
+  max-width: 480px;
+}
+.advStat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.advStatNum {
+  font-family: var(--chn-font-flex), var(--chn-font-sans), system-ui, sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--accent, #00c26f);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.advStatLabel {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.advLink {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--accent, #00c26f);
+  text-decoration: none;
+  font-weight: 500;
+}
+.advLink:hover {
+  text-decoration: underline;
+}
+.advArt {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 360px;
+}
+
+/* ─── SupportedNetworks (Available networks) ─────────────────────────
+   Three-column table: network (icon + sup-tag + name) | smart contract
+   address | exchange ↑↓ button. Port of the legacy `available-networks`
+   block; one row per network where the same coin runs (e.g. native ADA
+   + ADA on BSC; USDT on ERC20/TRC20/BEP20/Sol). */
+.networksTable {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.networksHead {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.networksBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.networksRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  transition: border-color 150ms ease;
+}
+.networksRow:hover {
+  border-color: var(--accent, #00c26f);
+}
+.networksToken {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.networksIconWrap {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 0;
+}
+.networksSup {
+  position: absolute;
+  top: -4px;
+  left: -10px;
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+.networksName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.networksContract {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.networksContractText {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--ink-3);
+  word-break: break-all;
+  background: transparent;
+  padding: 0;
+}
+.networksExchange {
+  display: flex;
+  justify-content: flex-end;
+}
+.networksExchangeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent, #00c26f);
+  text-decoration: none;
+  font-size: 16px;
+  border: 1px solid transparent;
+  transition: background 150ms ease;
+}
+.networksExchangeBtn:hover {
+  background: rgba(0, 194, 111, 0.12);
+}
+@media (max-width: 768px) {
+  .networksHead {
+    display: none;
+  }
+  .networksRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'token exchange'
+      'contract contract';
+    gap: 12px;
+  }
+  .networksToken {
+    grid-area: token;
+  }
+  .networksContract {
+    grid-area: contract;
+  }
+  .networksExchange {
+    grid-area: exchange;
+  }
+}
+
+/* SR-only — keeps the per-item h3/p outline crawlers expect ("98% Triumph
+   Rate" / description) while the visual surface uses the stat-tile grid. */
+.advHiddenBullets {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .advCard {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
+  .advStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .advStatNum {
+    font-size: 28px;
+  }
+  .advArt {
+    margin: 0 auto;
+    max-width: 240px;
+  }
+}
+
+/* ─── WhatIs aside coin logo ─────────────────────────────────────────
+   Big centered round logo of the page coin, rendered as a sibling of
+   the prose card. Mirrors prod's two-column layout for the "What is
+   Cardano?" section. */
+.whatIsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: 32px;
+  align-items: start;
+}
+.whatIsLogoWrap {
+  display: grid;
+  place-items: center;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 28px;
+  flex-shrink: 0;
+}
+.whatIsLogoWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@media (max-width: 768px) {
+  .whatIsLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .whatIsLogoWrap {
+    width: 120px;
+    height: 120px;
+    padding: 18px;
+    margin: 0 auto;
+  }
+}
+
+/* ─── LatestNews card grid ───────────────────────────────────────────
+   Three-up card layout with cover image, title, author + date. Port of
+   the prod blog-card style. */
+.newsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.newsCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--paper);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.newsCard:hover {
+  border-color: var(--accent, #00c26f);
+}
+.newsCover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  background: var(--paper-2, #1f1f24);
+}
+.newsBody {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+.newsTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  margin: 0;
+}
+.newsMeta {
+  margin-top: auto;
+  font-size: 13px;
+  color: var(--ink-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.newsAuthor {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ─── SellSupport phone illustration ─────────────────────────────────
+   Two-column CTA: copy + button on the left, iPhone mockup with chat
+   bubbles on the right. Port of the legacy `sell-support` block. */
+.sellSupport {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
+  gap: 32px;
+  align-items: center;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.sellSupportImg {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin-left: auto;
+}
+@media (max-width: 768px) {
+  .sellSupport {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
+  .sellSupportImg {
+    max-width: 180px;
+    margin: 0 auto;
+  }
+}
+
+/* Wrapper for the embedded SwapWidget inside `price-calculator-vertical`.
+   Constrains the widget's max width so it doesn't span the whole content
+   column on desktop and adds a bit of vertical breathing room between
+   the prose blurb and the calculator card. */
+.calcEmbed {
+  margin-top: 16px;
+  max-width: 520px;
+}
+
+/* Inline rich-text: drop the default top/bottom margins so the renderer
+   can sit comfortably inside FAQ answers, CTA descriptions, and step
+   bodies without inflating the surrounding card. */
+.prose :global(p):first-child,
+.prose :global(h1):first-child,
+.prose :global(h2):first-child,
+.prose :global(h3):first-child,
+.prose :global(h4):first-child {
+  margin-top: 0;
+}
+.prose :global(p):last-child,
+.prose :global(ul):last-child,
+.prose :global(ol):last-child {
+  margin-bottom: 0;
+}
+.prose :global(a) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(36, 169, 87, 0.4);
+  text-underline-offset: 3px;
+}
+.prose :global(a):hover {
+  text-decoration-color: currentColor;
+}
+.prose :global(ul),
+.prose :global(ol) {
+  margin: 8px 0 8px 20px;
+  padding: 0;
+}
+.prose :global(li) {
+  margin: 4px 0;
+}
+.prose :global(strong) {
+  font-weight: 600;
+}
+.prose :global(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--paper-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

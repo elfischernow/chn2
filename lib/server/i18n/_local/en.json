@@ -1,0 +1,37 @@
+{
+  "META.CURRENCIES.TITLE": "All Cryptocurrencies — Buy, Sell, Exchange",
+  "META.CURRENCIES.DESCRIPTION": "Browse {count}+ cryptocurrencies on ChangeNOW. Live rates, instant swaps, no account required.",
+  "META.CURRENCIES.PAGE_SUFFIX": " — Page {page}",
+
+  "BREADCRUMBS.HOME": "Home",
+  "BREADCRUMBS.CURRENCIES": "All currencies",
+  "BREADCRUMBS.PAGE": "Page {page}",
+
+  "META.COIN.TITLE": "Exchange {name} ({ticker}) — Live Rates on ChangeNOW",
+  "META.COIN.DESCRIPTION": "Instantly exchange {name} ({ticker}) at the best rate on ChangeNOW. Live rates, no account, no limits.",
+
+  "META.PAIR.TITLE": "Exchange {fromName} ({fromTicker}) to {toName} ({toTicker})",
+  "META.PAIR.DESCRIPTION": "Convert {fromName} ({fromTicker}) to {toName} ({toTicker}) instantly on ChangeNOW. Best rates, no account, no limits.",
+
+  "CURRENCIES_PAGE.HEADING": "All cryptocurrencies",
+  "CURRENCIES_PAGE.SUBTITLE": "Real-time exchange rates across {count}+ assets and 70+ networks. Pick a coin, pick a counter-asset, swap.",
+  "CURRENCIES_PAGE.WHAT_IS_TITLE": "What is {name}?",
+  "CURRENCIES_PAGE.HOW_TO_TITLE": "How to buy or sell {name}",
+  "CURRENCIES_PAGE.FAQ_TITLE": "{name} FAQ",
+  "CURRENCIES_PAGE.START_TITLE": "Exchange {name} now",
+
+  "CURRENCIES_TABLE.SEARCH_PLACEHOLDER": "Search by ticker or name…",
+  "CURRENCIES_TABLE.SORT_RANK": "Popular first",
+  "CURRENCIES_TABLE.SORT_ABC": "A–Z",
+  "CURRENCIES_TABLE.COL_INDEX": "#",
+  "CURRENCIES_TABLE.COL_NAME": "Currency",
+  "CURRENCIES_TABLE.COL_NETWORK": "Network",
+  "CURRENCIES_TABLE.COL_ACTION": "",
+  "CURRENCIES_TABLE.EMPTY_TITLE": "No matches",
+  "CURRENCIES_TABLE.EMPTY_HINT": "Try a different ticker or name.",
+  "CURRENCIES_TABLE.EXCHANGE_CTA": "Exchange",
+
+  "CURRENCIES_PAGINATION.PREV": "Previous",
+  "CURRENCIES_PAGINATION.NEXT": "Next",
+  "CURRENCIES_PAGINATION.PAGE_OF": "Page {current} of {total}"
+}

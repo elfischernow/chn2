@@ -1,0 +1,42 @@
+# Local development environment. Production uses k8s/Nomad manifests
+# (build.groovy pipeline); this file exists only so `docker compose up`
+# gives a working app + Redis without per-developer setup.
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --save 60 1
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      # Override REDIS_URL so it points at the compose service rather than
+      # whatever the developer's host has on 127.0.0.1.
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source for HMR; keep node_modules and .next inside the
+      # container so cross-OS native modules don't collide.
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:

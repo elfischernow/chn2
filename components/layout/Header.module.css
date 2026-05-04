@@ -1,0 +1,477 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-header-bg);
+  color: var(--color-header-fg);
+  overflow: visible;
+  border-bottom: 1px solid var(--color-header-border);
+  font-family: var(--chn-font-flex), 'Roboto Flex', sans-serif;
+  font-variation-settings:
+      'GRAD' 0,
+      'XOPQ' 96,
+      'XTRA' 468,
+      'YOPQ' 79,
+      'YTAS' 750,
+      'YTDE' -203,
+      'YTFI' 738,
+      'YTLC' 514,
+      'YTUC' 712,
+      'slnt' 0,
+      'wdth' 134;
+}
+
+/* Make the homepage-only nav + switch inherit the same Roboto Flex axis the
+ * blog header uses, so the in-bar typography reads as one set. */
+.bar :global(.nav-item),
+.bar :global(.switch button) {
+  font-family: inherit;
+  font-variation-settings: inherit;
+}
+
+.bar {
+  height: var(--header-h);
+  /* 3-cell grid: brand left, nav centered in the remaining track, right end.
+     Predictable column positions across viewport widths and matches the
+     section gutter (max-width 1440 + 40px padding) for one shared grid. */
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* Below this width the nav + right cluster don't fit alongside the brand
+   without forcing tiny tap targets or text truncation — collapse to a
+   hamburger + sheet. The threshold (1100px) leaves headroom for long
+   localised tab labels (DE/RU run ~30% wider than EN) before things start
+   colliding mid-bar. */
+@media (max-width: 1099px) {
+  .bar > :global(.nav) { display: none; }
+  .bar > .right { display: none !important; }
+}
+
+.bar > :global(.nav) {
+  justify-self: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  /* Tight gap — Personal/Business switch sits right next to the logo. */
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  color: var(--Text-colors-Text-Primary);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoSvg {
+  width: auto;
+  height: 36px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.logoBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--BG-Secondary);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--Text-colors-Text-Secondary);
+}
+
+.searchWrap {
+  display: none;
+  flex-shrink: 0;
+  width: 320px;
+}
+
+.right {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  /* Sits in column 3 of the bar grid — no auto-margin needed. */
+}
+
+/* Above the collapse threshold (1100px), show the right cluster. Below
+   it, the hamburger takes over (the @media block earlier in this file
+   force-hides .right with !important so we don't fight specificity). */
+@media (min-width: 1100px) {
+  .right {
+    display: flex;
+  }
+}
+
+/* Hamburger toggle — only appears when the desktop nav has been hidden
+   above. Sits in column 3 of `.bar` so the brand stays put while the
+   right cluster swaps for a single icon. */
+.hamburger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--Text-colors-Text-Primary);
+  border-radius: 8px;
+  cursor: pointer;
+  /* Push to the rightmost cell — `.bar`'s grid puts auto/1fr/auto and
+     this is the rightmost child when the hamburger replaces .right. */
+  justify-self: end;
+  transition: background-color 0.15s ease-in-out;
+}
+.hamburger:hover {
+  background-color: var(--color-header-button-hover);
+}
+@media (max-width: 1099px) {
+  .hamburger {
+    display: inline-flex;
+  }
+}
+
+/* Mobile menu sheet — slide-in panel that hosts everything we hid:
+   audience switch, the four product nav sections, auth buttons, and the
+   icon dropdowns (headphones / apps / settings). Mounts to the body via
+   the same `.header` element so the sheet z-index sits above sticky
+   page chrome. */
+.sheetBackdrop {
+  /* Closed state: fully removed from layout. `display: none` is more
+     bulletproof than `pointer-events: none` for click-through — if state
+     ever gets stuck (bfcache restore, hydration mismatch), an off-screen
+     non-rendered element can't trap clicks the way a transparent fixed
+     element with stale event handlers can. The visible/animated state
+     applies only when `.sheetBackdropOpen` is added. */
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.4);
+  /* Sticky header sits at z-index 100; the sheet must clear it. */
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.sheetBackdropOpen {
+  display: block;
+  opacity: 1;
+}
+.sheet {
+  /* Same display:none safety as the backdrop. The sheet is positioned
+     fixed: even off-screen via `translateX(100%)` it would still occupy
+     a stacking context that React-bound focus/scroll can hit. Removing it
+     from layout entirely when closed is the no-surprises default. */
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 88vw);
+  background: var(--color-header-bg);
+  color: var(--color-header-fg);
+  z-index: 201;
+  /* Slide in from the right. Translate avoids reflowing the rest of the
+     document when toggling. */
+  transform: translateX(100%);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Box-shadow lifts the sheet edge off the page in light theme, and
+     gives a subtle ring in dark theme. */
+  box-shadow: -16px 0 40px -12px rgba(15, 15, 20, 0.25);
+}
+.sheetOpen {
+  display: flex;
+  transform: translateX(0);
+}
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-header-border);
+  /* Stays put as the user scrolls a long sheet. */
+  position: sticky;
+  top: 0;
+  background: var(--color-header-bg);
+  z-index: 1;
+}
+.sheetClose {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sheetClose:hover {
+  background-color: var(--color-header-button-hover);
+}
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+}
+.sheetGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sheetGroupTitle {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--Text-colors-Text-Secondary);
+  margin: 0;
+  padding: 0 4px;
+}
+.sheetItem {
+  /* `<a>` and `<button>` siblings render identically — same height,
+     same padding, same tap target size. */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--Text-colors-Text-Primary);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.15s ease;
+}
+.sheetItem:hover,
+.sheetItem:focus-visible {
+  background-color: var(--color-header-button-hover);
+}
+.sheetItemPrimary {
+  background: #00C26F;
+  color: #fff;
+  justify-content: center;
+  font-weight: 600;
+}
+.sheetItemPrimary:hover,
+.sheetItemPrimary:focus-visible {
+  background: #00A451;
+}
+.sheetCaret {
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform 200ms ease;
+}
+.sheetItemOpen .sheetCaret {
+  transform: rotate(180deg);
+}
+.sheetSubmenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 8px 14px;
+}
+.sheetSubItem {
+  padding: 10px 12px;
+  font-size: 16px;
+  color: var(--Text-colors-Text-Secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sheetSubItem:hover {
+  background-color: var(--color-header-button-hover);
+  color: var(--Text-colors-Text-Primary);
+}
+.sheetIconRow {
+  display: flex;
+  gap: 8px;
+}
+.sheetIconBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border: 0;
+  background: var(--color-header-field);
+  color: var(--Text-colors-Text-Primary);
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+}
+.sheetIconBtn:hover {
+  background: var(--color-header-button-hover);
+}
+
+.iconButtonsWrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.iconButton {
+  display: flex;
+  border: none;
+  background-color: transparent;
+  color: var(--color-header-fg);
+  padding: 10px;
+  border-radius: 7px;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.iconButton:hover {
+  background-color: var(--color-header-button-hover);
+}
+
+.authButtonsWrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.authButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 8px 12px;
+  background: transparent;
+  font-size: var(--Typography-Size-l);
+  line-height: var(--Typography-Line-height-s);
+  letter-spacing: 0.4px;
+  font-weight: 600;
+  color: var(--Text-colors-Text-Primary);
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.authButton:hover {
+  background-color: var(--color-header-button-hover);
+}
+
+.authButton:active {
+  background-color: var(--color-header-button-active);
+}
+
+.authButtonGreen,
+.authButtonGreen:hover,
+.authButtonGreen:active {
+  background-color: #00C26F;
+  color: #fff;
+}
+
+.authButtonGreen:hover {
+  background-color: #00A451;
+  color: #fff;
+}
+
+.authButtonGreen:active {
+  background-color: #007A34;
+  color: #fff;
+}
+
+.brilliantButton {
+  border: none;
+  background: var(--color-header-field);
+  color: var(--color-header-fg);
+  border-radius: 50%;
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+.gradientWrapper {
+  border-radius: 8px;
+  padding: 1px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.gradientWrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-45deg, transparent 0%, var(--color-header-button-active) 100%);
+  background-origin: border-box;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+.gradientWrapper:hover::before,
+.gradientWrapperActive::before {
+  opacity: 1;
+}
+
+.roundGradientWrapper {
+  border-radius: 50%;
+}
+
+.roundGradientWrapper:hover .brilliantButton {
+  background: var(--color-header-button-hover);
+}
+
+.roundGradientWrapper:active .brilliantButton {
+  background: var(--color-header-button-active);
+}
+
+.gradientWrapper:active .iconButton,
+.gradientWrapperActive .iconButton {
+  background-color: var(--color-header-button-active);
+}
+
+.langWrap {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .langWrap {
+    display: contents;
+  }
+
+  .searchWrap {
+    display: block;
+  }
+}

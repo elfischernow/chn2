@@ -1,0 +1,20 @@
+# Dev-only image — runs `next dev` with HMR. Production builds use the
+# multi-stage Dockerfile in the repo root.
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat git python3 make g++
+
+# The private @changenow registry token is supplied by host ~/.npmrc, which
+# the developer mounts via docker compose if needed. For pure dev (no
+# private deps) the public lockfile resolves fine.
+COPY package.json package-lock.json* ./
+RUN npm ci || npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

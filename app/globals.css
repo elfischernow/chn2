@@ -1,26 +1,4101 @@
+/* ===========================================================================
+ * ChangeNOW homepage globals
+ * Composed from /Design-components/Color-palette + /Design-components/Typography
+ * + the homepage hi-fi prototype. Tailwind is loaded so utility classes still
+ * work, but the homepage itself is built on these CSS vars + semantic classes.
+ * =========================================================================== */
+
 @import "tailwindcss";
 
+/* ================================================================
+   ChangeNOW — Colors & Type
+   Source: /Design-components/Color-palette + /Design-components/Typography
+   ================================================================ */
+
+/* ---------- Roboto (Google Fonts mirror) ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ───────── Brand ───────── */
+  --chn-green:           #00C26F;   /* primary */
+  --chn-green-hover:     #00A451;
+  --chn-green-active:    #00903D;
+  --chn-green-tint-1:    #E6F9F1;   /* sec-button hover on light bg */
+  --chn-green-tint-2:    #D0F9E8;   /* sec-button active on light bg */
+  --chn-green-tint-3:    #CFFFF7;   /* mint chip / available-dot bg */
+  --chn-green-soft:      #88F2CA;
+  --chn-green-bright:    #65EDBA;
+
+  /* ───────── B2B Blue ───────── */
+  --chn-blue:            #4E95FF;
+  --chn-blue-hover:      #4387EC;
+  --chn-blue-active:     #2A73DF;
+
+  /* ───────── Neutrals ───────── */
+  --chn-font-black:      #2B2B37;   /* primary text + dark surfaces */
+  --chn-font-black-2:    #2B2B36;
+  --chn-font-black-3:    #1B1B1E;   /* near-black for high contrast */
+  --chn-grey-text:       #9696A5;   /* secondary text */
+  --chn-grey-text-2:     #6A6A7F;   /* tertiary text */
+  --chn-grey-text-3:     #808086;
+  --chn-light-grey:      #C3C3C3;   /* disabled */
+  --chn-stroke:          #DCE2EA;   /* default borders */
+  --chn-stroke-soft:     #E5E5E9;   /* softer dividers */
+  --chn-stroke-soft-2:   #EAE8ED;
+  --chn-page-bg:         #F6F4F8;   /* page background, hover-row fill */
+  --chn-surface:         #FFFFFF;
+  --chn-surface-2:       #FAFAFD;
+  --chn-surface-3:       #F8F8F8;
+  --chn-overlay:         rgba(43, 43, 54, 0.4);
+
+  /* ───────── Purples (chart depth, illustration shadows) ───────── */
+  --chn-purple-dark:     #5B587D;
+  --chn-purple-medium:   #8B86AF;
+  --chn-purple-light:    #8080BE;
+
+  /* ───────── System ───────── */
+  --chn-attention:       #F39321;   /* yellow icon */
+  --chn-attention-bg:    #FDEFC1;   /* input-error bg fill */
+  --chn-error:           #D80027;   /* destructive / negative delta */
+  --chn-success:         var(--chn-green);
+
+  /* ───────── Gradients ───────── */
+  --chn-gradient-brand:  linear-gradient(180deg, #3AAE6A 11%, #32E37B 73%, #3AAE6A 100%);
+  --chn-gradient-gold:   linear-gradient(135deg, #4EA1F5 0%, #5C95F4 19%, #8278F2 55%, #8E6FF2 65%, #8A80E8 72%, #81ADD1 85%, #76EAB1 100%);
+
+  /* ───────── Shadows ───────── */
+  --chn-shadow-card:     0 4px 16px rgba(43, 43, 54, 0.04);
+  --chn-shadow-card-hover: 0 8px 24px rgba(43, 43, 54, 0.06);
+  --chn-shadow-pop:      0 12px 32px rgba(43, 43, 54, 0.10);
+  --chn-shadow-inset:    inset 0 0 0 1px var(--chn-stroke);
+
+  /* ───────── Radii ───────── */
+  --chn-radius-xs:       4px;
+  --chn-radius-sm:       8px;
+  --chn-radius-md:       12px;   /* inputs, primary buttons */
+  --chn-radius-lg:       16px;   /* cards, swatches */
+  --chn-radius-xl:       24px;   /* modals, large surfaces */
+  --chn-radius-pill:     999px;
+
+  /* ───────── Spacing scale (multiples of 4) ───────── */
+  --chn-space-1:  4px;
+  --chn-space-2:  8px;
+  --chn-space-3:  12px;
+  --chn-space-4:  16px;
+  --chn-space-5:  20px;
+  --chn-space-6:  24px;
+  --chn-space-8:  32px;
+  --chn-space-10: 40px;
+  --chn-space-12: 48px;
+  --chn-space-16: 64px;
+
+  /* ───────── Type primitives ───────── */
+  /* `--chn-font-sans` and `--chn-font-flex` are owned by next/font in
+     app/[lang]/layout.tsx — declaring them here at :root would override the
+     hashed family that next/font injects on `html.<roboto.variable>` (equal
+     specificity, later in source order), and the page silently falls back to
+     system fonts. Only `--chn-font-mono` lives here because next/font isn't
+     loading a mono face. */
+  --chn-font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+
+  --chn-fw-light:    300;
+  --chn-fw-regular:  400;
+  --chn-fw-medium:   500;
+  --chn-fw-semibold: 600;
+  --chn-fw-bold:     700;
+  --chn-fw-black:    900;
+
+  /* Sizes / line heights — from Typography page */
+  --chn-h1-size: 24px;   --chn-h1-line: 28px;
+  --chn-h2-size: 20px;   --chn-h2-line: 32px;
+  --chn-body-size: 16px; --chn-body-line: 24px;
+  --chn-caption-size: 14px; --chn-caption-line: 18px;
+  --chn-small-size: 12px; --chn-small-line: 16px;
+  --chn-button-size: 18px; --chn-button-line: 22px;
+  --chn-display-size: 36px; --chn-display-line: 42px; /* page titles */
+
+  /* ───────── Semantic aliases (for app code) ───────── */
+  --fg1: var(--chn-font-black);
+  --fg2: var(--chn-grey-text);
+  --fg3: var(--chn-light-grey);
+  --bg1: var(--chn-page-bg);
+  --bg2: var(--chn-surface);
+  --border: var(--chn-stroke);
+  --border-soft: var(--chn-stroke-soft);
+  --accent: var(--chn-green);
+  --danger: var(--chn-error);
+  --warn: var(--chn-attention);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ───────── Header / dropdown tokens (mirrored from changenow-blog) ─────────
+   Names kept verbatim so the blog's BlogHeader, dropdowns, and language
+   switcher render with identical visuals when ported. */
+:root {
+  --header-h: 72px;
+  --color-header-bg: #ffffff;
+  --color-header-fg: #131318;
+  --color-header-field: #f1f2f4;
+  --color-header-border: rgba(0, 0, 0, 0.08);
+  --color-header-hover-bg: rgba(0, 0, 0, 0.05);
+  --color-header-button-hover: rgba(0, 0, 0, 0.06);
+  --color-header-button-active: #e6e6ec;
+
+  --Text-colors-Text-Primary: #2B2B37;
+  --Text-colors-Text-Secondary: #6A6A7F;
+  --BG-Primary: #fff;
+  --BG-Secondary: #F1F2F4;
+
+  /* Floor at 16px so the kit's "small" tier still respects the
+     readability minimum. The l/m steps already met it; only s was below. */
+  --Typography-Size-l: 18px;
+  --Typography-Size-m: 16px;
+  --Typography-Size-s: 16px;
+  --Typography-Line-height-s: 24px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --dropdown-bg: rgba(255, 255, 255, 0.78);
+  --dropdown-bg-solid: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.10);
+  --dropdown-hover-bg: rgba(0, 0, 0, 0.05);
+  --dropdown-shadow:
+    0 8px 32px rgba(19, 19, 24, 0.16),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.6);
+
+  /* Auth-flow palette aliases. Legacy SCSS for /authorization and
+     /registration uses these `--pro-*` names; mapping to existing chn-*
+     tokens preserves visual parity with legacy. Light branch — values
+     mirror legacy-projects/.../client/styles/variables.module.scss:183-200. */
+  --pro-page-bg: var(--chn-page-bg);             /* #F6F4F8 */
+  --pro-element-primary-bg: var(--chn-surface);  /* #FFFFFF */
+  --pro-element-secondary-bg: var(--chn-surface);
+  --element-tertiary-bg: var(--chn-surface);
+  --pro-element-border-color: var(--chn-stroke-soft-2); /* #EAE8ED */
+  --pro-text-secondary-color: var(--chn-grey-text-2);   /* #6A6A7F */
+  --pro-text-tertiary-color: var(--chn-grey-text-3);    /* #808086 */
+  --text-primary-color: var(--chn-font-black);          /* #2B2B37 */
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'],
+body[data-theme='dark'] {
+  /* Solid black header/footer surface — no purple/blue tint. The legacy
+     palette had `#17171F` / `#3A364F` which read as dark indigo on
+     LCDs; matching the blog's "true black" treatment instead. */
+  --color-header-bg: #0A0A0A;
+  --color-header-fg: #ffffff;
+  --color-header-field: #1A1A1A;
+  --color-header-border: rgba(255, 255, 255, 0.08);
+  --color-header-hover-bg: rgba(255, 255, 255, 0.06);
+  --color-header-button-hover: #1F1F1F;
+  --color-header-button-active: #2A2A2A;
+
+  --Text-colors-Text-Primary: #fff;
+  --Text-colors-Text-Secondary: #AEB0BD;
+  --BG-Primary: #1A1A1A;
+  --BG-Secondary: #232323;
+
+  --dropdown-bg: rgba(20, 20, 28, 0.72);
+  --dropdown-bg-solid: #16161E;
+  --dropdown-border: rgba(255, 255, 255, 0.12);
+  --dropdown-hover-bg: rgba(255, 255, 255, 0.08);
+  --dropdown-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+
+  /* Auth-flow palette aliases — dark branch (legacy variables.module.scss:270-287). */
+  --pro-page-bg: #262628;
+  --pro-element-primary-bg: #1B1B1E;
+  --pro-element-secondary-bg: #262628;
+  --element-tertiary-bg: #343443;
+  --pro-element-border-color: #3B3C48;
+  --pro-text-secondary-color: #AEB0BD;
+  --pro-text-tertiary-color: #A4A3AA;
+  --text-primary-color: #ffffff;
+}
+
+.cn-logo-svg { width: auto; height: 36px; display: block; flex-shrink: 0; }
+
+/* ================================================================
+   Semantic helpers — drop these classes on elements, no setup.
+   ================================================================ */
+
+html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: var(--bg1); -webkit-font-smoothing: antialiased; }
+
+.chn-display { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-bold); font-size: var(--chn-display-size); line-height: var(--chn-display-line); color: var(--fg1); letter-spacing: 0; }
+.chn-h1      { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-regular); font-size: var(--chn-h1-size); line-height: var(--chn-h1-line); color: var(--fg1); letter-spacing: 0; }
+.chn-h1-bold { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-bold); font-size: var(--chn-h1-size); line-height: var(--chn-h1-line); color: var(--fg1); }
+.chn-h2      { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-medium); font-size: var(--chn-h2-size); line-height: var(--chn-h2-line); color: var(--fg1); letter-spacing: 0; }
+.chn-body    { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-regular); font-size: var(--chn-body-size); line-height: var(--chn-body-line); color: var(--fg1); }
+.chn-body-semi { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-semibold); font-size: var(--chn-body-size); line-height: var(--chn-body-line); color: var(--fg1); }
+.chn-caption     { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-regular); font-size: var(--chn-caption-size); line-height: var(--chn-caption-line); color: var(--fg2); }
+.chn-caption-med { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-medium); font-size: var(--chn-caption-size); line-height: var(--chn-caption-line); color: var(--fg1); }
+.chn-small       { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-regular); font-size: var(--chn-small-size); line-height: var(--chn-small-line); color: var(--fg2); }
+.chn-small-med   { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-medium); font-size: var(--chn-small-size); line-height: var(--chn-small-line); color: var(--fg1); }
+.chn-button-text { font-family: var(--chn-font-sans); font-weight: var(--chn-fw-bold); font-size: var(--chn-button-size); line-height: var(--chn-button-line); }
+.chn-mono        { font-family: var(--chn-font-mono); font-size: var(--chn-body-size); line-height: var(--chn-body-line); color: var(--fg1); }
+
+.chn-fg-pos { color: var(--chn-green); }
+.chn-fg-neg { color: var(--chn-error); }
+.chn-fg-warn { color: var(--chn-attention); }
+.chn-fg-muted { color: var(--fg2); }
+.chn-fg-faint { color: var(--fg3); }
+
+/* ================================================================
+   Component primitives
+   ================================================================ */
+
+.chn-card {
+  background: var(--chn-surface);
+  border-radius: var(--chn-radius-lg);
+  box-shadow: var(--chn-shadow-card);
+  padding: var(--chn-space-6);
+}
+
+.chn-btn {
+  font-family: var(--chn-font-sans);
+  font-weight: var(--chn-fw-bold);
+  font-size: var(--chn-button-size);
+  line-height: var(--chn-button-line);
+  border-radius: var(--chn-radius-md);
+  height: 48px;
+  padding: 0 var(--chn-space-6);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--chn-space-2);
+  border: 0; cursor: pointer;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+.chn-btn-primary { background: var(--chn-green); color: #fff; }
+.chn-btn-primary:hover { background: var(--chn-green-hover); }
+.chn-btn-primary:active { background: var(--chn-green-active); }
+.chn-btn-secondary { background: var(--chn-surface); color: var(--fg1); box-shadow: inset 0 0 0 1px var(--chn-stroke); }
+.chn-btn-secondary:hover { background: var(--chn-green-tint-1); }
+.chn-btn-secondary:active { background: var(--chn-green-tint-2); }
+.chn-btn-ghost { background: transparent; color: var(--fg1); }
+.chn-btn-ghost:hover { background: var(--chn-page-bg); }
+.chn-btn-dark { background: var(--chn-font-black); color: #fff; }
+.chn-btn-disabled, .chn-btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+.chn-input {
+  height: 48px; padding: 0 var(--chn-space-4);
+  border-radius: var(--chn-radius-md);
+  border: 1px solid var(--chn-stroke);
+  background: var(--chn-surface);
+  font: var(--chn-fw-regular) var(--chn-body-size)/var(--chn-body-line) var(--chn-font-sans);
+  color: var(--fg1);
+  transition: border-color 150ms ease-out;
+}
+.chn-input:focus { outline: none; border-color: var(--chn-green); }
+.chn-input.error { border-color: var(--chn-error); background: var(--chn-attention-bg); }
+
+.chn-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: var(--chn-radius-pill); font: var(--chn-fw-medium) 12px/16px var(--chn-font-sans); }
+.chn-chip-success { background: var(--chn-green-tint-3); color: var(--chn-green-active); }
+.chn-chip-network { background: var(--chn-error); color: #fff; height: 18px; padding: 0 6px; font-size: 16px; }
+.chn-chip-warn { background: var(--chn-attention-bg); color: var(--chn-attention); }
+.chn-chip-muted { background: var(--chn-page-bg); color: var(--fg2); }
+
+.chn-divider { height: 1px; background: var(--chn-stroke-soft); width: 100%; }
+
+.chn-row-clickable { transition: background-color 150ms ease-out; cursor: pointer; }
+.chn-row-clickable:hover { background: var(--chn-page-bg); }
+
+
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ink: #0F0F14;
+    --ink-2: #44444f;
+    --ink-3: #8a8a98;
+    --paper: #ffffff;
+    --paper-2: #F6F4F8;
+    --paper-3: #EFEDF2;
+    --line: #E5E5E9;
+    --line-soft: #EFEDF2;
+    --accent: #00C26F;
+    --accent-hover: #00A451;
+    --accent-soft: #E6F9F1;
+
+    /* Responsive layout tokens. `--gutter` shrinks with the viewport so
+       sections always have breathing room without hardcoding 40px on
+       narrow screens. `--page-max` is the design's max-width. The header
+       collapse threshold (`--bp-nav: 1100px`) lives in media queries
+       directly because CSS custom props can't drive `@media`. */
+    --gutter: clamp(16px, 4vw, 40px);
+    --page-max: 1440px;
+    --b2b: #4E95FF;
   }
+  :where(html,body)[data-theme="dark"] {
+    --ink: #F5F4F2;
+    --ink-2: #B6B2A8;
+    --ink-3: #74726A;
+    --paper: #0F0F14;
+    --paper-2: #17171F;
+    --paper-3: #1F1F29;
+    --line: #2A2A35;
+    --line-soft: #1F1F29;
+  }
+
+  html, body {
+    margin: 0; padding: 0; background: var(--paper-2);
+    color: var(--ink); font-family: var(--chn-font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* Fluid base font-size — scales between 16px on phones and 18px on
+       1440px+ desktops. All elements that don't declare a font-size
+       explicitly inherit this floor; combined with the per-class bumps
+       below, no copy renders below 16/18 on its respective viewport. */
+    font-size: clamp(16px, 0.4vw + 13.5px, 18px);
+    line-height: 1.5;
+    /* `clip` (not `hidden`) prevents an internal scroll container from
+       being created — important so `position: sticky` and IntersectionObserver
+       targeting still work. Catches anything that escapes the responsive
+       guards below; without it a single fixed-px child anywhere in the
+       tree forces a horizontal scrollbar. */
+    overflow-x: clip;
+  }
+  * { box-sizing: border-box; }
+  /* No element should be allowed to push past 100% of its container's
+     width by default. Components that genuinely need to overflow (carousels
+     with their own internal scroll, mega-menu popouts) opt out explicitly. */
+  img, video, canvas, svg, iframe { max-width: 100%; height: auto; }
+
+  .page-wrap {
+    width: 100%; min-height: 100vh;
+    background: var(--paper); position: relative;
+  }
+  /* Sections render their content at the design max-width but the page
+     background bleeds to the viewport edges. The gutter token gives a
+     consistent inline padding that shrinks with the viewport — sections
+     no longer need to bake their own `padding: 0 40px`. */
+  .page-wrap > section,
+  .page-wrap > .hero { max-width: var(--page-max); margin-inline: auto; }
+
+  /* ───────────── HEADER ───────────── */
+  .hdr {
+    height: 72px; padding: 0 40px;
+    max-width: 1440px; margin: 0 auto;
+    display: flex; align-items: center; gap: 32px;
+    position: relative; z-index: 2;
+  }
+  /* Legacy `.logo` selector kept for any non-CSS-Modules consumer. The new
+     header logo lives in Header.module.css and uses `--Text-colors-Text-Primary`
+     which auto-inverts. */
+  .logo {
+    display: inline-flex; align-items: center; height: 40px;
+    text-decoration: none;
+    color: var(--Text-colors-Text-Primary);
+  }
+  .logo-img { display: block; height: 36px; width: auto; }
+
+  .switch {
+    display: inline-flex; padding: 4px;
+    /* Use header-bus tokens so the pill harmonizes with the blog-style
+       header chrome in both themes. */
+    background: var(--color-header-field); border-radius: 999px;
+    height: 38px;
+  }
+  .switch button {
+    border: 0; background: transparent; cursor: pointer;
+    padding: 0 18px; height: 30px; border-radius: 999px;
+    font-family: inherit; font-size: 16px; font-weight: 600; letter-spacing: 0.2px;
+    color: var(--Text-colors-Text-Secondary);
+    transition: all 150ms ease;
+  }
+  .switch button[aria-selected="true"] {
+    background: var(--color-header-bg); color: var(--Text-colors-Text-Primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px var(--color-header-border);
+  }
+  .switch.b2b button[aria-selected="true"] { color: var(--b2b); }
+
+  /* hdr-wrap is the full-width underlay (background + bottom rule). The
+     inner .hdr stays at the 1440 design max so logo/nav/buttons don't drift
+     apart on a 4K monitor. The mega-menu drops out of the same wrapper so
+     it inherits the same horizontal alignment. */
+  .hdr-wrap {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav {
+    display: flex; gap: 4px;
+    font-size: var(--Typography-Size-l); color: var(--Text-colors-Text-Primary); font-weight: 400;
+  }
+  .nav-item {
+    display: inline-flex; align-items: center;
+    border: 0; background: transparent; cursor: pointer;
+    color: var(--Text-colors-Text-Primary); font: inherit;
+    padding: 8px 14px; border-radius: 10px;
+    transition: color 150ms ease, background 150ms ease;
+  }
+  .nav-item:hover, .nav-item.active {
+    color: var(--Text-colors-Text-Primary);
+    background: var(--color-header-button-hover);
+  }
+
+  /* ───── Mega-menu ───── */
+  .mm-anchor {
+    position: absolute; top: 100%; left: 0; right: 0;
+    display: flex; justify-content: center;
+    padding: 0 40px 24px;
+    pointer-events: none;
+  }
+  .mm {
+    pointer-events: auto;
+    width: 100%; max-width: 1080px;
+    /* Glass treatment — same tokens the icon dropdowns (Apps / Headphones /
+       Settings) use, so the panels read as one family. The blur is applied
+       to whatever sits behind the menu (page chrome, hero background) and
+       the saturated backdrop-filter brings the underlying colors forward
+       without making the menu look opaque. */
+    background: var(--dropdown-bg);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid var(--dropdown-border);
+    border-radius: var(--radius-md, 16px);
+    box-shadow: var(--dropdown-shadow);
+    overflow: hidden;
+    animation: mmDrop 220ms cubic-bezier(.2,.8,.2,1) both;
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .mm { background: var(--dropdown-bg-solid); }
+  }
+  @keyframes mmDrop {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mm-grid { display: grid; gap: 8px; padding: 20px; }
+  .mm-grid-2 { grid-template-columns: 1.4fr 1fr; }
+  .mm-grid-3 { grid-template-columns: 1.4fr 1fr 1fr; }
+  .mm-col { padding: 8px 12px; min-width: 0; }
+  .mm-col + .mm-col { border-left: 1px solid var(--line-soft); }
+  .mm-h {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+  }
+
+  /* Highlight cards (image + title + sub) */
+  .mm-hl {
+    display: grid; grid-template-columns: 64px 1fr; gap: 14px;
+    padding: 10px; border-radius: 12px;
+    text-decoration: none; color: inherit;
+    transition: background 150ms ease;
+    margin-bottom: 4px;
+  }
+  .mm-hl:hover { background: var(--paper-2); }
+  .mm-hl-img {
+    width: 64px; height: 64px; border-radius: 12px;
+    position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .mm-hl-img.tone-orange { background: linear-gradient(135deg, #FFE7CC 0%, #FFC089 100%); }
+  .mm-hl-img.tone-green  { background: linear-gradient(135deg, #CFF3DF 0%, #7AD8A6 100%); }
+  .mm-hl-img.tone-violet { background: linear-gradient(135deg, #E5DEFF 0%, #B4A6F7 100%); }
+  .mm-hl-img.tone-blue   { background: linear-gradient(135deg, #D6EBFF 0%, #88B6F0 100%); }
+  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-orange { background: linear-gradient(135deg, #4B2D14 0%, #8C5226 100%); }
+  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-green  { background: linear-gradient(135deg, #143028 0%, #2C6F4F 100%); }
+  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-violet { background: linear-gradient(135deg, #221A40 0%, #4F3F8E 100%); }
+  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-blue   { background: linear-gradient(135deg, #102236 0%, #2A4D7A 100%); }
+  .mm-hl-dot {
+    width: 22px; height: 22px; border-radius: 999px;
+    background: rgba(255,255,255,0.7);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .mm-hl-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .mm-hl-row { display: flex; align-items: center; gap: 8px; }
+  .mm-hl-title { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.005em; }
+  .mm-hl-sub { font-size: 16px; color: var(--ink-3); line-height: 1.4; }
+
+  .mm-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 1px 5px; border-radius: 4px; text-transform: uppercase;
+    background: var(--paper-2); color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .mm-badge.new { background: var(--accent); color: #fff; }
+  .mm-badge.popular { background: rgba(124,92,255,0.14); color: #6B49FF; }
+  .mm-badge.dev { background: rgba(78,149,255,0.14); color: #2B6FE0; }
+
+  /* Plain link list */
+  .mm-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mm-list > li > .mm-link {
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none; color: var(--ink);
+    font-size: 16px; font-weight: 500;
+    padding: 8px 10px; border-radius: 8px;
+    transition: background 150ms ease;
+  }
+  .mm-list > li > .mm-link:hover { background: var(--paper-2); }
+  .mm-soon {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-3); padding: 1px 5px; border-radius: 4px;
+    border: 1px solid var(--line);
+    line-height: 1.4;
+  }
+  .mm-sub { list-style: none; padding: 0 0 4px 10px; margin: 0; display: flex; flex-direction: column; gap: 1px; }
+  .mm-sub > li > a {
+    display: block; padding: 5px 10px; border-radius: 6px;
+    color: var(--ink-3); font-size: 16px; text-decoration: none;
+    transition: color 150ms, background 150ms;
+  }
+  .mm-sub > li > a:hover { color: var(--ink); background: var(--paper-2); }
+
+  /* `.mm-foot` removed — the foot row used to render `cfg.foot` linking
+     to a primary product page, but those targets weren't ready yet. The
+     mega-menu sections themselves carry the actionable links now. */
+
+  .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 999px;
+    display: grid; place-items: center;
+    border: 0; background: transparent; cursor: pointer;
+    color: var(--ink-2); transition: background 150ms;
+  }
+  .icon-btn:hover { background: var(--paper-2); }
+  .btn {
+    border: 0; cursor: pointer; font-family: inherit; font-weight: 600;
+    border-radius: 10px; padding: 0 18px; height: 40px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 16px; transition: all 150ms;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; color: var(--ink); }
+  .btn-ghost:hover { background: var(--paper-2); }
+  .btn-dark { background: var(--ink); color: var(--paper); }
+  .btn-outline { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn-outline:hover { background: var(--paper-2); }
+  .btn-lg { height: 52px; padding: 0 24px; font-size: 16px; border-radius: 12px; }
+
+  /* atmospheric backdrop behind widget — sells the glass */
+  .hero { position: relative; }
+  .hero::before {
+    content: ''; position: absolute;
+    right: -180px; top: 0; width: 900px; height: 980px;
+    background:
+      radial-gradient(circle at 22% 18%, rgba(0,194,111,0.34), transparent 40%),
+      radial-gradient(circle at 78% 14%, rgba(255,180,0,0.24), transparent 36%),
+      radial-gradient(circle at 60% 55%, rgba(124,92,255,0.34), transparent 44%),
+      radial-gradient(circle at 16% 72%, rgba(78,149,255,0.30), transparent 42%),
+      radial-gradient(circle at 88% 84%, rgba(255,106,85,0.22), transparent 40%),
+      radial-gradient(circle at 42% 95%, rgba(232,121,249,0.26), transparent 42%);
+    filter: blur(60px);
+    pointer-events: none; z-index: 0;
+    animation: blobShift 18s ease-in-out infinite alternate;
+  }
+  .hero::after {
+    content: ''; position: absolute;
+    right: 160px; bottom: -200px; width: 480px; height: 480px;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(232,121,249,0.32), transparent 60%),
+      radial-gradient(circle at 30% 70%, rgba(124,92,255,0.22), transparent 55%);
+    filter: blur(70px);
+    pointer-events: none; z-index: 0;
+    animation: blobShift2 14s ease-in-out infinite alternate;
+  }
+  @keyframes blobShift {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(-30px, 20px) scale(1.05); }
+    100% { transform: translate(20px, -10px) scale(0.98); }
+  }
+  @keyframes blobShift2 {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(60px, -40px) scale(1.1); }
+  }
+  :where(html,body)[data-theme="dark"] .hero::before {
+    background:
+      radial-gradient(circle at 22% 28%, rgba(0,194,111,0.45), transparent 42%),
+      radial-gradient(circle at 78% 22%, rgba(255,180,0,0.30), transparent 38%),
+      radial-gradient(circle at 65% 65%, rgba(124,92,255,0.42), transparent 45%),
+      radial-gradient(circle at 18% 78%, rgba(78,149,255,0.36), transparent 42%),
+      radial-gradient(circle at 88% 88%, rgba(255,106,85,0.28), transparent 40%);
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .hero {
+    /* Inline padding follows the global gutter; vertical padding shrinks
+       a touch on smaller viewports but never below 40px (where the grid
+       still has room to breathe). */
+    padding-block: clamp(40px, 6vw, 72px) clamp(40px, 6vw, 56px);
+    padding-inline: var(--gutter);
+    /* `min(480px, 100%)` lets the widget column shrink below 480px on
+       tablets/phones without overflowing. The 1fr text column shrinks
+       with it, then we stack at the breakpoint below. */
+    display: grid;
+    grid-template-columns: 1fr min(480px, 42%);
+    gap: clamp(32px, 5vw, 64px);
+    align-items: start;
+  }
+  /* Below the tablet threshold the side-by-side layout doesn't fit the
+     headline + widget at readable sizes — stack and centre the widget. */
+  @media (max-width: 1024px) {
+    .hero {
+      grid-template-columns: 1fr;
+      justify-items: stretch;
+    }
+    .hero > .widget,
+    .hero > .swap-widget-skeleton {
+      width: min(480px, 100%);
+      justify-self: center;
+    }
+  }
+  /* Grid items get `min-width: auto` by default, which is the *intrinsic*
+     content size — non-wrapping inline content (e.g. a Trustpilot row or
+     the widget's stack of fixed-px fields) can then push the track wider
+     than its container. Forcing `min-width: 0` lets the 1fr track behave
+     as it should. Applied to all direct hero children for both grid
+     orientations (2-col and stacked). */
+  .hero > * { min-width: 0; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; height: 32px;
+    background: var(--paper-2); border-radius: 999px;
+    font-size: 16px; font-weight: 500; color: var(--ink-2);
+    letter-spacing: 0;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 999px; background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .hero h1 {
+    /* Fluid typography between 40px (phones) and 88px (desktop) — keeps
+       the headline as the page's anchor at every width without manual
+       per-breakpoint tuning. */
+    font-size: clamp(40px, 8vw, 88px);
+    line-height: 0.96; letter-spacing: -0.035em;
+    font-weight: 500; margin: 24px 0 0; color: var(--ink);
+    /* Long localized words (DE/RU) won't blow out the column. */
+    overflow-wrap: anywhere;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero h1 .ital { font-style: italic; font-weight: 400; letter-spacing: -0.04em; }
+  .hero-dek {
+    margin-top: 28px; max-width: 520px;
+    font-size: 18px; line-height: 1.5; color: var(--ink-2); font-weight: 400;
+  }
+  .hero-cta { display: flex; gap: 10px; margin-top: 32px; }
+
+  /* Hero secondary CTA — interesting but not green */
+  .btn-hero {
+    position: relative;
+    /* 1px gradient ring around the inner pill. */
+    height: 56px; padding: 1px;
+    border: 0; cursor: pointer; border-radius: 16px;
+    font-family: inherit;
+    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    overflow: visible;
+    transition: transform 200ms ease, box-shadow 250ms ease;
+    display: inline-block;
+    text-decoration: none;
+  }
+  .btn-hero-bg {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 14px;
+    height: 100%; padding: 0 26px 0 26px;
+    /* Inner radius = outer (16px) - padding (1px) so the gradient ring is
+       parallel to the inner pill. Mismatch produces the donut-corner artefact. */
+    border-radius: 15px;
+    background: var(--paper);
+    color: var(--ink); font-size: 16px; font-weight: 600;
+    transition: background 250ms ease;
+  }
+  .btn-hero::before { display: none; }
+  .btn-hero-text { position: relative; z-index: 1; }
+  .btn-hero-arrow {
+    position: relative; z-index: 1;
+    width: 28px; height: 28px; border-radius: 999px;
+    background: linear-gradient(135deg, #C84BFF 0%, #7C5CFF 50%, #4E95FF 100%);
+    color: #fff;
+    display: grid; place-items: center;
+    transition: all 250ms ease;
+  }
+  .btn-hero:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(124,92,255,0.35); }
+  .btn-hero:hover::before { filter: saturate(1.15); }
+  .btn-hero:hover .btn-hero-arrow { transform: translateX(3px) scale(1.04); box-shadow: 0 4px 14px -2px rgba(124,92,255,0.5); }
+  :where(html,body)[data-theme="dark"] .btn-hero-bg { background: #1a1a22; }
+  :where(html,body)[data-theme="dark"] .btn-hero-arrow { color: #fff; }
+
+  .hero-trust {
+    margin-top: 48px; padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 24px;
+    /* Allow the trustpilot row to wrap onto a second line on narrow
+       viewports — at 16px+ font-size the "4.7 out of 5 · based on N
+       reviews" string is too wide to fit alongside the logo + stars in
+       a phone-width column. */
+    flex-wrap: wrap;
+  }
+  .trust-stars { display: flex; gap: 1px; }
+  .trust-stars span {
+    width: 18px; height: 18px; background: #00B67A; display: grid; place-items: center;
+  }
+  .trust-stars span svg { width: 12px; height: 12px; }
+  .trust-text { font-size: 16px; color: var(--ink-2); line-height: 1.4; }
+  .trust-text strong { color: var(--ink); font-weight: 700; }
+  .trust-logo {
+    font-weight: 800; color: var(--ink); font-size: 16px;
+    display: flex; align-items: center; gap: 6px; letter-spacing: -0.01em;
+  }
+  .trust-logo::before {
+    content: ''; width: 16px; height: 16px;
+    background: #00B67A;
+    clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+
+  /* ───────────── WIDGET ───────────── */
+  .widget {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    border-radius: 28px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.8) inset,
+      0 0 0 1px rgba(15,15,20,0.06),
+      0 24px 60px -20px rgba(15,15,20,0.18),
+      0 8px 24px -8px rgba(15,15,20,0.08);
+    padding: 24px;
+    /* Lock the calculator's overall height across all tabs so flipping
+       between Swap / Buy-Sell / Convert-Market / Convert-Limit doesn't
+       bounce the page. The floor matches the natural Swap/Buy-Sell
+       height (thick fields + cashback/provider strip slot below CTA).
+       Convert tabs (no Pro CTA, smaller aux) absorb the delta as
+       breathing room around the input stack via the `auto`-margins on
+       `.swap-stack` and `.swap-rate`. */
+    min-height: 588px;
+    display: flex; flex-direction: column;
+    /* Anchor for the initial-load skeleton overlay (`.widget-skel`). */
+    position: relative;
+    position: relative;
+  }
+  :where(html,body)[data-theme="dark"] .widget {
+    background: rgba(31,31,41,0.6);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 24px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  .mode-tabs {
+    display: flex; gap: 2px; padding: 4px;
+    background: rgba(246,244,248,0.6);
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    margin-bottom: 18px; position: relative;
+    /* Lift above .swap-stack (z=auto) so the More-dropdown isn't hidden
+       behind the BTC/ETH token chips. */
+    z-index: 5;
+  }
+  :where(html,body)[data-theme="dark"] .mode-tabs { background: rgba(255,255,255,0.04); }
+  .mode-tab {
+    flex: 1; height: 38px; border: 0; background: transparent;
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    color: var(--ink-3); cursor: pointer; border-radius: 10px;
+    transition: all 150ms; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .mode-tab[aria-pressed="true"] {
+    background: var(--paper); color: var(--ink);
+    box-shadow: 0 1px 3px rgba(15,15,20,0.06), 0 0 0 1px rgba(15,15,20,0.04);
+  }
+  .mode-tab.more { flex: 0 0 auto; padding: 0 12px; color: var(--ink-2); }
+  .mode-tab.more:hover { color: var(--ink); }
+
+  .mode-sub {
+    /* Quiet eyebrow above the swap form — the readability floor doesn't
+       apply to all-caps tertiary captions like this; bumping it to 16px
+       made it shout. Tight line-height keeps the field row right under it. */
+    font-size: 12px; line-height: 1.2;
+    color: var(--ink-3); margin: 0 0 18px;
+    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+  }
+
+  .swap-field {
+    background: rgba(246,244,248,0.7);
+    border-radius: 18px;
+    /* Two-half geometry: the label band (top padding + label + gap) sits
+       above the selector slot (selector + bottom padding). For the
+       trigger to land exactly on the field's vertical centre we equate
+       the two: `padding-bottom = padding-top + label-line + gap`.
+       The 8px gap between label and selector is what stops "Fees
+       included" from snugging into the trigger pill. Field totals ~120px
+       — thick enough to feel like a primary surface, not a chip. */
+    padding: 16px 18px 37px;
+    position: relative;
+    transition: background 150ms;
+    box-shadow: inset 0 0 0 1px rgba(15,15,20,0.04);
+    display: flex; flex-direction: column; gap: 8px;
+    /* Whole field is a click target for the amount input. Interactive
+       children (picker pill, fees pill, button) override this. */
+    cursor: text;
+  }
+  :where(html,body)[data-theme="dark"] .swap-field {
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .swap-field:focus-within {
+    background: rgba(246,244,248,1);
+    /* Hide the default inner stroke — the gradient ring below replaces it. */
+    box-shadow: none;
+  }
+  /* 1px gradient ring on focus, drawn via the standard "two-mask" trick:
+     gradient bg sits behind a transparent border, then a content-box mask
+     subtracts the inside, leaving a 1px ribbon along the radius. Same hue
+     family as `.btn-hero` so the two focus affordances rhyme. */
+  .swap-field::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .swap-field:focus-within::before { opacity: 1; }
+  :where(html,body)[data-theme="dark"] .swap-field:focus-within {
+    background: rgba(255,255,255,0.06);
+  }
+  .swap-label {
+    /* Field caption ("You send" / "You buy" / "Fees included") — same
+       reasoning as `.mode-sub`: it's a label, not body copy. Compact
+       line-height (1) so the row sits right under it without a big air
+       gap that pushes the amount visually down. */
+    font-size: 13px; line-height: 1;
+    color: var(--ink-3); font-weight: 500;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* Fees included label + tooltip */
+  .fees-pill {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0;
+    color: var(--ink-3);
+    /* Matches `.swap-label` so the right-side fees caption reads as part
+       of the same caption row, not a separate (heavier) element. */
+    font-size: 13px; line-height: 1; font-weight: 500;
+    cursor: help; outline: none;
+    transition: color 150ms ease;
+  }
+  .fees-pill:hover, .fees-pill:focus { color: var(--ink); }
+  .fees-pill svg { display: block; opacity: 0.7; }
+  .fees-tip {
+    position: absolute; bottom: calc(100% + 10px); right: -8px;
+    width: 240px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 12px;
+    padding: 12px 14px 12px;
+    box-shadow: 0 12px 36px -8px rgba(15,15,20,0.32), 0 2px 8px rgba(15,15,20,0.12);
+    opacity: 0; pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 160ms ease, transform 160ms ease;
+    z-index: 20;
+    display: flex; flex-direction: column; gap: 6px;
+    font-weight: 500;
+    cursor: default;
+  }
+  .fees-tip::after {
+    content: ''; position: absolute; top: 100%; right: 14px;
+    border: 6px solid transparent; border-top-color: var(--ink);
+  }
+  .fees-pill:hover .fees-tip,
+  .fees-pill:focus .fees-tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .fees-tip-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px; }
+  .fees-tip-row {
+    display: flex; justify-content: space-between;
+    font-size: 16px; color: rgba(255,255,255,0.72);
+  }
+  .fees-tip-row span:last-child { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fees-tip-foot {
+    margin-top: 6px; padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    font-size: 16px; line-height: 1.4; color: rgba(255,255,255,0.6); font-weight: 500;
+  }
+  :where(html,body)[data-theme="dark"] .fees-tip { background: var(--paper-2); color: var(--ink); box-shadow: 0 12px 36px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--line); }
+  :where(html,body)[data-theme="dark"] .fees-tip::after { border-top-color: var(--paper-2); }
+  :where(html,body)[data-theme="dark"] .fees-tip-row { color: var(--ink-2); }
+  :where(html,body)[data-theme="dark"] .fees-tip-row span:last-child { color: var(--ink); }
+  :where(html,body)[data-theme="dark"] .fees-tip-foot { color: var(--ink-3); border-color: var(--line); }
+  .swap-amount {
+    border: 0; background: transparent; outline: 0;
+    font-family: inherit; font-size: 32px; font-weight: 600;
+    color: var(--ink);
+    /* Use flex sizing instead of width:100% so the lock-badge sibling
+       (rendered inside `.swap-input-wrap` in fixed-rate mode) can sit
+       next to the input without wrapping. */
+    flex: 1; min-width: 0;
+    /* No extra top padding — the label above sets its own gap via the
+       field's column flex. The 6px we used to have here was duplicating
+       that and pushed the amount visually low. */
+    padding: 0; letter-spacing: -0.025em;
+    /* Fixed line-height locks the input's vertical footprint to the max
+       font size so stepping the font down on long amounts doesn't shrink
+       the field. Tabular numerals stop the column of digits from
+       breathing as new estimates tick in. */
+    line-height: 38px;
+    font-variant-numeric: tabular-nums;
+    transition: font-size 120ms ease-out;
+  }
+  /* Step the type down on very long amounts (e.g. ETH → KISHU at ~17 digits)
+     so the value doesn't overflow the field. Drives by `data-size` set in
+     the component from the formatted string's length. The line-height above
+     keeps the input the same height regardless of which step we land on. */
+  .swap-amount[data-size="md"] { font-size: 24px; }
+  .swap-amount[data-size="sm"] { font-size: 18px; }
+  /* Center the amount and the currency picker pill against each other.
+     `flex-end` was inherited from an earlier iteration where the label
+     and the row competed for vertical space; with the label now in
+     compact column-flow at the top, centering reads cleaner — the 32px
+     amount and the 40px pill share the same optical centre line. */
+  .swap-row { display: flex; align-items: center; gap: 12px; }
+
+  /* Currency picker.
+     Closed: amount input on the left, ticker pill on the right.
+     Open:   search input slides in from the right over the amount slot,
+             the trigger pill swaps content to a close (X) at the same place.
+     The grid layout stacks the amount and search slots in the same cell so
+     a CSS transition can swap them without remount.
+
+     The trigger pill keeps a stable width across both states (no width or
+     min-width change on `[data-open]`). That matters: the search slot's
+     translateX is anchored to its grid cell, and any column-width reflow
+     mid-animation pulls the slot off-target — the source of the jitter. */
+  .cur { position: relative; }
+  .cur-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .cur-amount-slot,
+  .cur-search-slot {
+    grid-column: 1; grid-row: 1;
+    min-width: 0;
+  }
+  /* Cross-fade between the amount input and the search bar — pure opacity,
+     no transform. A slide-in tied to the grid cell is impossible to make
+     truly smooth: any layout twitch (web font swap, scrollbar, fractional
+     pixel) shows as jitter on the moving target. Fade has none of that. */
+  .cur-amount-slot,
+  .cur-search-slot {
+    transition: opacity 200ms ease-out;
+    will-change: opacity;
+  }
+  .cur-amount-slot {
+    /* Centre the amount input vertically within its grid cell so it
+       lines up with the currency-picker pill (40px tall, sitting in the
+       same row at align-items: center). The previous `flex-end` pinned
+       the amount to the bottom of the cell, which read as "amount sits
+       low under the label" once the label tightened up. */
+    display: flex; align-items: center;
+  }
+  .cur[data-open] .cur-amount-slot {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Search slot — sits in the same grid cell as the amount, fades in. */
+  .cur-search-slot {
+    display: flex; align-items: center; gap: 8px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink-3);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .cur[data-open] .cur-search-slot {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cur-search-icon { color: var(--ink-3); flex: 0 0 14px; }
+  .cur-search-input {
+    flex: 1; min-width: 0;
+    border: 0; outline: 0; background: transparent;
+    /* Slightly tighter than the global body floor — input fields in a
+       picker want a more typable size than the clamp(16,18) heading
+       baseline. */
+    font: inherit; font-size: 14px; font-weight: 500; color: var(--ink);
+  }
+  .cur-search-input::placeholder { color: var(--ink-3); }
+
+  /* ── Trigger (closed-state pill) ─────────────────────────────────
+     The DOM node lives in `.cur-shell`'s second grid column. Same node
+     throughout, content swaps when the popover opens (Coin + label →
+     close X) so the click target stays put through the slide-in. The
+     visual is a rounded-rect with a two-line label, a chain dot on the
+     coin avatar, and a divider before the chevron — see
+     `components/homepage/calculator/shared/CoinTrigger.tsx`. */
+  .coin-trigger {
+    grid-column: 2; grid-row: 1;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 8px 6px 6px;
+    min-height: 48px;
+    border-radius: 14px;
+    background: var(--paper); border: 0; cursor: pointer;
+    font-family: inherit; color: inherit;
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition: box-shadow 180ms cubic-bezier(0.32, 0.72, 0, 1),
+                background 180ms ease;
+  }
+  .coin-trigger:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+  .coin-trigger[data-open] {
+    /* Slightly darker stroke on open; no dimensional change so the search
+       slot's translateX measurement against the trigger column stays valid. */
+    box-shadow: inset 0 0 0 1px var(--ink-2);
+    justify-content: center;
+  }
+  :where(html,body)[data-theme="dark"] .coin-trigger {
+    /* Lift the pill off the field background — the field's own surface
+       in dark theme is already very subtle, so the trigger needs a
+       firmer fill to read as an interactive control. */
+    background: rgba(255,255,255,0.07);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
+  }
+  :where(html,body)[data-theme="dark"] .coin-trigger:hover {
+    background: rgba(255,255,255,0.11);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+  }
+
+  /* Coin avatar slot — chain mark baked into the upstream icon already
+     identifies the network on multi-chain tokens; we don't draw an extra
+     overlay on the avatar. */
+  .coin-trigger-avatar {
+    width: 30px; height: 30px;
+    flex: 0 0 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .coin-trigger-avatar .coin {
+    width: 30px; height: 30px;
+  }
+
+  /* Two-line text block when a chain chip is present; collapses to a
+     single line when null. `justify-content: center` keeps the lone
+     ticker visually centered in the pill height. */
+  .coin-trigger-text {
+    display: inline-flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    gap: 3px; line-height: 1;
+    min-width: 0;
+  }
+  .coin-trigger-ticker {
+    font-size: 17px; font-weight: 600; color: var(--ink);
+    letter-spacing: 0;
+  }
+  /* Colored chain chip — same brand-colored rendering as the listbox row
+     so the closed and open states read in the same visual language. */
+  .coin-trigger-chip {
+    align-self: flex-start;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.06em;
+    line-height: 1;
+    padding: 2px 4px; border-radius: 3px;
+    /* Bg + fg are inlined as `style={{}}` from the per-chain palette;
+       these defaults only kick in for unmapped chains. */
+    color: #fff; background: #B2BFD0;
+    /* Ellipsis on absurdly long codes — should never happen with our
+       network catalog, but cheap insurance against a runaway label
+       breaking the trigger row. */
+    max-width: 96px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .coin-trigger-caret {
+    color: var(--ink-3);
+    margin-right: 4px;
+    transition: transform 200ms ease;
+  }
+  .coin-trigger[data-open] .coin-trigger-caret {
+    transform: rotate(180deg);
+  }
+  .coin-trigger-close {
+    color: var(--ink);
+  }
+
+  /* Image variant — render the upstream SVG as-is (it already carries shape
+     and brand color). No background, no clip. */
+  .coin-img { display: block; object-fit: contain; }
+  /* Letter-tile fallback — colored circle + initial. Used only when the
+     upstream had no icon URL. */
+  .coin-fallback {
+    border-radius: 999px; overflow: hidden;
+    display: grid; place-items: center;
+    color: #fff; font-size: 16px; font-weight: 800;
+  }
+
+  /* Dropdown list — popover anchored under the picker shell. The shell
+     above already hosts the search input, so this is the list-only part. */
+  .cur-list {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    list-style: none; margin: 0; padding: 4px 0;
+    background: var(--paper); border-radius: 14px;
+    box-shadow:
+      0 1px 0 rgba(15,15,20,0.04),
+      0 12px 32px rgba(15,15,20,0.16),
+      inset 0 0 0 1px var(--line);
+    z-index: 60;
+    max-height: 360px; overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Brief fade-in so the list doesn't pop in cold while the search bar
+       is still sliding in. */
+    animation: cur-list-in 180ms ease-out both;
+  }
+  @keyframes cur-list-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  :where(html,body)[data-theme="dark"] .cur-list {
+    background: #1A1A22;
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.4),
+      0 12px 32px rgba(0,0,0,0.5),
+      inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  /* Picker rows are dense data — readability floor is relaxed here in
+     favour of fitting more rows on screen at a glance. The "16px floor"
+     elsewhere doesn't apply to a list-of-coins display where the user
+     scans for a ticker rather than reads sentences. */
+  .cur-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .cur-row-header {
+    color: var(--ink-3); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 10px 12px 4px;
+    pointer-events: none;
+  }
+  .cur-row-item { cursor: pointer; user-select: none; }
+  .cur-row-item .coin { width: 28px; height: 28px; flex: 0 0 28px; }
+  .cur-row-item:hover,
+  .cur-row-item[data-active] {
+    background: var(--paper-2);
+  }
+  :where(html,body)[data-theme="dark"] .cur-row-item:hover,
+  :where(html,body)[data-theme="dark"] .cur-row-item[data-active] {
+    background: rgba(255,255,255,0.06);
+  }
+  .cur-row-item[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+  .cur-row-name {
+    display: flex; flex-direction: column; min-width: 0; flex: 1;
+    line-height: 1.25;
+    font-size: 14px;
+  }
+  .cur-row-name strong { font-weight: 700; color: var(--ink); }
+  .cur-row-fullname {
+    color: var(--ink-3); font-size: 12px; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Network badge — coloured per chain. `--net-color` and `--net-ink` are
+     set inline by `CurrencyPicker.tsx` from the network-colors helper.
+     Saturated brand backgrounds + white-or-near-black ink (chosen for
+     contrast); the same colour reads identically on light and dark
+     theme, so no theme-specific overrides needed. Falls back to the
+     legacy neutral grey when the helper has no entry for a network. */
+  .cur-row-network {
+    flex: 0 0 auto;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    line-height: 1;
+    color: var(--net-ink, #fff);
+    background: var(--net-color, #B2BFD0);
+    padding: 4px 7px; border-radius: 5px;
+  }
+  /* Network chip on the closed-state trigger pill — sits *under* the
+     ticker so the pill keeps its natural width regardless of how long the
+     network's name is. Stacking is purely vertical: ticker on top reads as
+     the primary identity, micro-chip below disambiguates the chain. */
+  .cur-empty {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--ink-3);
+    font-size: 14px;
+  }
+
+  /* Fixed-rate validity indicator next to the displayed rate. */
+  .swap-rate-text { display: inline-flex; align-items: center; gap: 8px; }
+  .swap-rate-timer {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 16px; font-weight: 600;
+  }
+  :where(html,body)[data-theme="dark"] .swap-rate-timer {
+    background: rgba(0, 194, 111, 0.16);
+  }
+
+  .swap-flip {
+    /* Anchor to the bottom edge of the FROM field's wrapping slot, half
+       above / half below so the button straddles the gap to the TO field.
+       Old design used `top: 50%` of `.swap-stack`, which only worked while
+       the stack was always two rows — adding the Limit price as a third
+       row pushed the geometric centre into the middle of the TO field. */
+    position: absolute; left: 50%; bottom: -21px;
+    transform: translateX(-50%);
+    width: 42px; height: 42px; border-radius: 14px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 0 0 5px var(--paper),
+      inset 0 0 0 1px rgba(15,15,20,0.08),
+      0 4px 12px rgba(15,15,20,0.08);
+    display: grid; place-items: center; cursor: pointer; z-index: 2;
+    color: var(--ink); transition: background 200ms ease, color 200ms ease, transform 200ms ease, box-shadow 200ms ease; border: 0;
+  }
+  .swap-flip:hover { background: var(--ink); color: var(--paper); transform: translateX(-50%) rotate(180deg); }
+  :where(html,body)[data-theme="dark"] .swap-flip { background: rgba(31,31,41,0.9); box-shadow: 0 0 0 5px var(--paper), inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.4); }
+  .swap-from-slot { position: relative; }
+  .swap-stack { position: relative; display: grid; gap: 8px; }
+
+  /* ── Private send mode ──────────────────────────────────────────
+     Shares the same field chrome as the swap stack so the surface
+     reads as one calculator across modes. The address row visually
+     extends the "Recipient gets" field — we keep the field-style
+     background + radius so the user perceives it as one unit. */
+  .pt-address-field {
+    background: rgba(246,244,248,0.7);
+    border-radius: 18px;
+    padding: 14px 18px;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(15,15,20,0.04);
+    display: flex; flex-direction: column; gap: 10px;
+    transition: background 150ms;
+  }
+  :where(html,body)[data-theme="dark"] .pt-address-field {
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .pt-address-field:focus-within {
+    background: rgba(246,244,248,1);
+    /* Hide the default inner stroke — the gradient ring below replaces it,
+       same affordance as `.swap-field:focus-within`. */
+    box-shadow: none;
+  }
+  /* 1px gradient ring on focus, mirrored from `.swap-field::before` so the
+     two field surfaces share a focus language. Two-mask trick: gradient bg
+     behind a transparent border, content-box mask subtracts the inside,
+     leaving a 1px ribbon along the radius. */
+  .pt-address-field::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .pt-address-field:focus-within::before { opacity: 1; }
+  :where(html,body)[data-theme="dark"] .pt-address-field:focus-within {
+    background: rgba(255,255,255,0.08);
+  }
+  /* Invalid state — surfaced when the typed address (or extra-id) doesn't
+     match the active chain's regex. Soft red wash + matching inset border
+     so the field reads as the source of the error, mirroring
+     `.swap-field[data-has-error]`. Focus ring is suppressed in this state
+     so the red wash doesn't fight a purple ring on top. */
+  .pt-address-field[data-invalid] {
+    background: rgba(216, 0, 39, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.2);
+  }
+  .pt-address-field[data-invalid]:focus-within {
+    background: rgba(216, 0, 39, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.3);
+  }
+  .pt-address-field[data-invalid]::before { opacity: 0; }
+  :where(html,body)[data-theme="dark"] .pt-address-field[data-invalid] {
+    background: rgba(216, 0, 39, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.3);
+  }
+  :where(html,body)[data-theme="dark"] .pt-address-field[data-invalid]:focus-within {
+    background: rgba(216, 0, 39, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.4);
+  }
+  .pt-address-error {
+    font-size: 12px; line-height: 1.3;
+    color: rgb(185,28,28);
+    margin: 2px 0 0 2px;
+  }
+  :where(html,body)[data-theme="dark"] .pt-address-error {
+    color: rgb(248,113,113);
+  }
+
+  /* QR scanner modal — full-screen overlay over the page when the user
+     taps the QR icon and grants camera permission. The video element
+     attaches to a `getUserMedia` stream in `PrivateView` and the
+     decode loop scans frames via `BarcodeDetector` until a match. */
+  .qr-scan-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 20px;
+  }
+  .qr-scan-video {
+    width: min(90vw, 480px);
+    height: min(70vh, 480px);
+    object-fit: cover;
+    border-radius: 18px;
+    background: #000;
+  }
+  .qr-scan-hint {
+    color: rgba(255,255,255,0.85);
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    text-align: center;
+  }
+  .qr-scan-close {
+    border: 0; cursor: pointer;
+    padding: 10px 26px; border-radius: 999px;
+    background: #fff; color: #111;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+  }
+  /* Wraps the input + floating label so the label can absolute-position
+     against this box. Uses `<label>` so a click on the empty area focuses
+     the input — same affordance the swap-field gives via the
+     `focusFieldInput` helper. */
+  .pt-address-input-wrap {
+    position: relative;
+    display: block;
+    cursor: text;
+    /* Reserves vertical space for the floated-up label so the field
+       height stays stable across empty / filled states. */
+    padding-top: 16px;
+    min-height: 38px;
+  }
+  .pt-address-input {
+    width: 100%;
+    border: 0; background: transparent; outline: 0;
+    font-family: inherit; font-size: 16px; font-weight: 500;
+    color: var(--ink);
+    padding: 0;
+  }
+  /* Placeholder is intentionally a single space so `:placeholder-shown`
+     can drive the label transition; the visible placeholder text lives
+     in `.pt-address-floating-label` below. */
+  .pt-address-input::placeholder { color: transparent; }
+
+  /* Floating label — sits over the empty input where a placeholder would
+     be, then floats up to a smaller "label" position when the input has
+     content or focus. Pure CSS via `:placeholder-shown` so the visual
+     transition doesn't bounce through React state. */
+  .pt-address-floating-label {
+    position: absolute;
+    left: 0;
+    top: 16px;
+    pointer-events: none;
+    color: var(--ink-3);
+    font-family: inherit; font-size: 16px; font-weight: 400;
+    transform-origin: 0 0;
+    transition: transform 140ms ease, color 140ms ease;
+  }
+  .pt-address-input:not(:placeholder-shown) ~ .pt-address-floating-label,
+  .pt-address-input:focus ~ .pt-address-floating-label {
+    transform: translateY(-16px) scale(0.8125);
+  }
+
+  /* Action row — sits below the input, right-aligned. The icon-only
+     wallet/QR buttons share the pill chrome with the text "Paste"
+     button via `.pt-address-paste`. */
+  .pt-address-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .pt-address-paste {
+    flex: 0 0 auto;
+    height: 32px; padding: 0 14px;
+    border: 0; border-radius: 999px;
+    background: var(--paper); color: var(--ink-2);
+    box-shadow: inset 0 0 0 1px var(--line);
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  }
+  .pt-address-paste:hover {
+    color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-3);
+  }
+  :where(html,body)[data-theme="dark"] .pt-address-paste {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  :where(html,body)[data-theme="dark"] .pt-address-paste:hover {
+    background: rgba(255,255,255,0.10); color: #fff;
+  }
+  /* Square icon-only variant for the QR scan + connected-wallet buttons.
+     The text-bearing Paste button stays pill-shaped (`pt-address-paste`'s
+     padding + width-by-content); icon buttons drop the horizontal
+     padding so they read as a compact glyph instead of a stretched
+     pill. */
+  .pt-address-paste.pt-address-icon {
+    width: 32px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  /* In Convert + Market/Fixed (two-field stack, no .lim-field) center the
+     stack vertically in whatever room the widget gives it instead of
+     gluing it to the top right under the tabs — the user reads the gap
+     as deliberate breathing room rather than wasted space. */
+  .swap-stack:not(:has(.lim-field)) { margin-top: auto; }
+
+  .swap-rate {
+    /* `margin-top: auto` glues the rate row (+ everything that follows —
+       CTA, cashback) to the bottom of the widget's flex column, so the
+       sub-mode toggle (Market/Fixed/Limit) and the primary CTA sit at
+       the same Y across all modes. Shorter modes (Convert + Market)
+       absorb the height delta as breathing room above the rate row,
+       not as a stranded "beard" below the CTA. */
+    margin-top: auto;
+    padding-top: 18px;
+    padding-left: 4px; padding-right: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+    /* Rate line is informational chrome under the inputs — same density
+       trade-off as the picker rows: 13px reads quieter under the 32px
+       headline amount and lets the Fixed/Floating pill sit alongside
+       without forcing the row to grow. */
+    font-size: 13px; color: var(--ink-2);
+    /* Lock height so the row never shrinks when text is replaced by the
+       skeleton — keeps everything below it pinned. */
+    min-height: 24px;
+  }
+  .swap-rate-text { min-height: 16px; }
+  .rate-toggle {
+    display: inline-flex; gap: 0; background: var(--paper-2); padding: 2px;
+    border-radius: 999px;
+  }
+  .rate-toggle button {
+    border: 0; background: transparent; cursor: pointer;
+    padding: 4px 10px; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: var(--ink-3);
+  }
+  .rate-toggle button[aria-pressed="true"] {
+    background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
+  }
+
+  /* ───────── Convert / Limit field ─────────
+     Only mounted when the user has the Convert tab + Limit sub-mode selected.
+     Lives as a third `.swap-field` after the You-sell / You-buy pair, so the
+     stack jumps from 2 → 3 fields. The `:has(.lim-field)` rules below claw
+     back vertical space across the stack so the widget's overall height
+     doesn't visibly grow when the user toggles Limit on. */
+  .lim-field {
+    /* Tighter than the default 18px padding because the field carries a
+       smaller value (a price, not an amount), and we still owe the stack
+       enough vertical headroom for the third row. */
+    padding-top: 12px !important; padding-bottom: 12px !important;
+    /* Field is flex-column (label on top, row below) — explicit so the
+       :has() compression below has a known starting point. */
+    display: flex !important; flex-direction: column !important;
+    gap: 4px;
+  }
+  .lim-label {
+    /* `.swap-label` ships `justify-content: space-between`, which pushes
+       the reverse-toggle to the far right edge of the title row. In
+       Limit mode we want the arrows hugging the title text so they read
+       as a control on the title, not as a stranded affordance. */
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+  }
+  /* Reverse-direction toggle — sits next to the field's label so it's
+     immediately associated with the price (not floated up by the
+     surrounding chrome). */
+  .lim-reverse {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; padding: 0; background: transparent;
+    color: var(--ink-3);
+    border-radius: 6px; cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .lim-reverse:hover { background: var(--paper-3); color: var(--ink); }
+  .lim-reverse[aria-pressed="true"] { color: var(--ink); background: var(--paper-3); }
+  :where(html,body)[data-theme="dark"] .lim-reverse:hover { background: rgba(255,255,255,0.08); }
+  :where(html,body)[data-theme="dark"] .lim-reverse[aria-pressed="true"] {
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Below-market hint — replaces the green/red delta line when the user's
+     directPrice falls below market (legacy: "PRICE_BELOW_MARKET"). Click
+     to snap back to the market-anchored seed. */
+  .lim-reset {
+    font: inherit; font-size: 13px; font-weight: 500; line-height: 1;
+    border: 0; padding: 3px 8px;
+    background: rgba(245, 158, 11, 0.14); color: #b45309;
+    border-radius: 999px; cursor: pointer;
+    transition: background 150ms ease;
+    align-self: flex-start;
+  }
+  .lim-reset:hover { background: rgba(245, 158, 11, 0.22); }
+  :where(html,body)[data-theme="dark"] .lim-reset {
+    background: rgba(245, 158, 11, 0.18); color: #fbbf24;
+  }
+  :where(html,body)[data-theme="dark"] .lim-reset:hover {
+    background: rgba(245, 158, 11, 0.28);
+  }
+  .lim-amount {
+    /* Scale the limit price down a notch — it's a reference value, not the
+       headline figure. Lets the prefix (≥), inline ticker (ETH), and pct
+       buttons share the row at a comfortable size. */
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+    padding-top: 0 !important;
+    /* Width is driven by the `size` attribute. `.swap-amount`'s base rule
+       sets `flex: 1` to fill the row — that wins over `size` and balloons
+       the input back to row width, which is what was pushing the inline
+       ticker to the far right. Force `flex: 0 0 auto` so the input
+       collapses to its size-derived intrinsic width. */
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding-left: 0 !important; padding-right: 0 !important;
+  }
+  /* Step the font down for long values — `size` alone would keep widening
+     the input until the inline ticker + pct-buttons fall off the row. The
+     three tiers map to the breakpoints in `limAmountSize`. */
+  .lim-amount[data-size="md"] { font-size: 18px !important; }
+  .lim-amount[data-size="sm"] { font-size: 15px !important; }
+  .lim-amount[data-size="xs"] { font-size: 12px !important; }
+  .lim-px-stack {
+    display: flex; flex-direction: column; gap: 0;
+    flex: 0 0 auto; min-width: 0;
+  }
+  .lim-px-row { display: flex; align-items: center; gap: 0; }
+  .lim-prefix {
+    font-size: 22px; font-weight: 500; color: var(--ink-3);
+    margin-right: 4px; line-height: 1;
+  }
+  .lim-tk-inline {
+    font-size: 22px; font-weight: 500; color: var(--ink-3);
+    margin-left: 8px; line-height: 1;
+  }
+  .lim-delta {
+    font-size: 13px; font-weight: 500; line-height: 1.4;
+  }
+  .lim-pos { color: var(--accent); }
+  .lim-neg { color: #E0563A; }
+  .pct-buttons {
+    display: inline-flex; gap: 6px;
+    flex: 0 0 auto; align-self: center;
+    /* Push the buttons against the right edge of the field, no matter how
+       narrow the price input has shrunk. */
+    margin-left: auto;
+  }
+  .pct-btn {
+    font-size: 13px; padding: 0 10px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--paper); color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 999px;
+    line-height: 1; font-family: inherit; font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+  .pct-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .pct-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  :where(html,body)[data-theme="dark"] .pct-btn {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75);
+    border-color: rgba(255,255,255,0.08);
+  }
+  :where(html,body)[data-theme="dark"] .pct-btn:hover {
+    background: rgba(255,255,255,0.1); color: #fff;
+  }
+
+  /* When the Limit field is in the stack, the other two fields shrink to
+     a tighter "compact" footprint — the widget already has three rows to
+     fit and a fourth chunk of label/selector air per field would push the
+     stack past its budget. Same centring trick as the default rule
+     (padding-bottom = padding-top + 13px label line) so the selector pill
+     still lands on the field's vertical centre, just at a smaller scale.
+     The compact treatment also drops the right-side "Fees included" pill
+     — limit orders don't need a per-row fee disclaimer when the rate row
+     below already carries the market reference. */
+  .swap-stack:has(.lim-field) { gap: 6px; }
+  .swap-stack:has(.lim-field) .swap-field:not(.lim-field) {
+    padding-top: 6px; padding-bottom: 19px;
+    /* Default `.swap-field` carries an 8px gap to keep "Fees included"
+       off the selector — but limit mode hides that pill, so the gap just
+       breaks the centring math. Reset to 0 so `padding-bottom = padding-
+       top + label-line` keeps the trigger on the field's vertical axis. */
+    gap: 0;
+  }
+  .swap-stack:has(.lim-field) .swap-field:not(.lim-field) .swap-amount {
+    font-size: 24px; line-height: 30px;
+  }
+  .swap-stack:has(.lim-field) .fees-pill { display: none; }
+
+  .swap-cta {
+    margin-top: 18px; height: 60px; border-radius: 16px;
+    background: var(--accent); color: #fff;
+    border: 0; cursor: pointer; width: 100%;
+    font-family: inherit; font-size: 18px; font-weight: 700;
+    transition: all 200ms ease;
+    box-shadow: 0 8px 20px -4px rgba(0,194,111,0.35), 0 0 0 1px rgba(0,194,111,0.2) inset;
+    /* Render identically when used as either <button> or <a>. */
+    display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none;
+  }
+  .swap-cta:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 12px 24px -6px rgba(0,194,111,0.45); color: #fff; }
+  /* Disabled / busy states for the private-mode submit gate. We keep the
+     CTA an `<a>` (so the legacy deep-link still works for non-private
+     modes) and surface the visual via `data-disabled` / `data-busy`
+     instead of the `disabled` attribute, which anchors don't honor. */
+  .swap-cta[data-disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: auto;
+    transform: none !important;
+    box-shadow: 0 8px 20px -4px rgba(0,194,111,0.18), 0 0 0 1px rgba(0,194,111,0.12) inset;
+  }
+  .swap-cta[data-disabled]:hover {
+    background: var(--accent);
+    transform: none;
+  }
+  .swap-cta[data-busy] {
+    cursor: progress;
+  }
+  /* Submission error — sits below the CTA so a failed POST doesn't push
+     the form layout around. */
+  .swap-cta-error {
+    display: block;
+    margin: 8px 4px 0;
+    font-size: 13px; line-height: 1.3;
+    color: rgb(185,28,28);
+    text-align: center;
+  }
+  :where(html,body)[data-theme="dark"] .swap-cta-error {
+    color: rgb(248,113,113);
+  }
+
+  /* Long-press CTA for Convert tab (authenticated users). The button fills
+     from left to right over 3 seconds while the user holds. */
+  .swap-cta-longpress {
+    margin-top: 18px; height: 60px; border-radius: 16px;
+    background: var(--accent); color: #fff;
+    border: 0; cursor: pointer; width: 100%;
+    font-family: inherit; font-size: 18px; font-weight: 700;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 20px -4px rgba(0,194,111,0.35), 0 0 0 1px rgba(0,194,111,0.2) inset;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .swap-cta-longpress-fill {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 100%);
+    transform-origin: left center;
+    transform: scaleX(0);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .swap-cta-longpress[data-holding] .swap-cta-longpress-fill {
+    transition: none;
+  }
+  .swap-cta-longpress-label {
+    position: relative; z-index: 1;
+    pointer-events: none;
+  }
+  .swap-cta-longpress:hover { background: var(--accent-hover); }
+  .swap-cta-longpress[data-holding] {
+    background: var(--accent-hover);
+    box-shadow: 0 12px 24px -6px rgba(0,194,111,0.45), 0 0 0 1px rgba(0,194,111,0.2) inset;
+  }
+  .swap-cta-longpress[data-disabled] {
+    opacity: 0.55; cursor: not-allowed;
+    box-shadow: 0 8px 20px -4px rgba(0,194,111,0.18), 0 0 0 1px rgba(0,194,111,0.12) inset;
+  }
+  .swap-cta-longpress[data-busy] { cursor: progress; }
+
+  /* Errors render inside `.swap-rate-text` (not the field) so they don't
+     grow the field's height. The field still tints red via the rule below
+     for visual context. */
+  .swap-rate-err {
+    color: var(--chn-error);
+    font-size: 13px; font-weight: 500;
+    /* Truncate long upstream messages to keep the rate row's height stable. */
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Out-of-range hint — clickable boundary value. Reads as a hint
+     (amber-ish, not destructive red) since the user can fix it in one
+     tap by accepting the suggestion. */
+  .swap-rate-bound {
+    font: inherit;
+    border: 0; padding: 4px 10px; margin: -4px 0;
+    background: rgba(245, 158, 11, 0.14);
+    color: #b45309;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 16px; font-weight: 600;
+    letter-spacing: -0.005em;
+    transition: background 150ms ease;
+  }
+  .swap-rate-bound:hover { background: rgba(245, 158, 11, 0.22); }
+  .swap-rate-bound:focus-visible { outline: 2px solid #b45309; outline-offset: 2px; }
+  .swap-rate-bound strong {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  :where(html,body)[data-theme="dark"] .swap-rate-bound {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+  }
+  :where(html,body)[data-theme="dark"] .swap-rate-bound:hover {
+    background: rgba(245, 158, 11, 0.28);
+  }
+  .swap-field[data-has-error] {
+    /* Soft red wash so the field reads as the source of the error without
+       breaking the rounded shape. */
+    background: rgba(216, 0, 39, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.2);
+  }
+  :where(html,body)[data-theme="dark"] .swap-field[data-has-error] {
+    background: rgba(216, 0, 39, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.3);
+  }
+  /* Read-only field — used on the You-get side in fiat mode (no reverse
+     estimate exists for on-ramps). Mute the value, drop the focus ring,
+     drop the text-cursor affordance. */
+  .swap-field[data-readonly] {
+    cursor: default;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .swap-field[data-readonly] .swap-amount { color: var(--ink-2); cursor: default; }
+  .swap-field[data-readonly]:focus-within { background: transparent; }
+  .swap-field[data-readonly]:focus-within::before { opacity: 0; }
+  :where(html,body)[data-theme="dark"] .swap-field[data-readonly] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  /* Shimmer placeholder shown while the estimate API resolves. The two
+     keyframes are local-scope so they don't collide with anything else. */
+  @keyframes swap-shimmer {
+    0% { background-position: -120% 0; }
+    100% { background-position: 220% 0; }
+  }
+
+  /* Full-widget initial-load skeleton — covers everything (tabs included)
+     until the first estimate resolves. Reuses the same shimmer keyframes
+     and palette as the per-input skeleton so the system reads as one
+     loading language. Sits inside `.widget` (which is `position:relative`)
+     and matches its border-radius so the rounded corners line up. */
+  .widget-skel {
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      rgba(15,15,20,0.06) 0%,
+      rgba(15,15,20,0.14) 50%,
+      rgba(15,15,20,0.06) 100%
+    );
+    background-size: 220% 100%;
+    animation: swap-shimmer 1.4s linear infinite;
+    pointer-events: none;
+    z-index: 50;
+  }
+  :where(html,body)[data-theme="dark"] .widget-skel {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04) 0%,
+      rgba(255,255,255,0.10) 50%,
+      rgba(255,255,255,0.04) 100%
+    );
+    background-size: 220% 100%;
+  }
+  /* Hide the live content under the skeleton so partially-rendered fields
+     don't peek through during the shimmer. */
+  .widget[data-initial-loading] > :not(.widget-skel) {
+    visibility: hidden;
+  }
+  /* Wrap each amount input in a stable flex slot; the skeleton overlays
+     it absolutely so the input never unmounts and the row height is fixed. */
+  .swap-input-wrap {
+    position: relative;
+    flex: 1; min-width: 0;
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+
+  /* Fixed-rate indicator — pill living to the right of the amount value,
+     just before the currency picker. Brighter than the legacy in-pill
+     lock so the user notices the rate is held without parsing the
+     toggle's state. */
+  .swap-lock-pill {
+    flex: 0 0 auto;
+    align-self: center;
+    display: inline-grid; place-items: center;
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    background: rgba(0, 194, 111, 0.18);
+    color: var(--accent);
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 194, 111, 0.32),
+      0 4px 14px -6px rgba(0, 194, 111, 0.5);
+    cursor: help;
+  }
+  :where(html,body)[data-theme="dark"] .swap-lock-pill {
+    background: rgba(0, 194, 111, 0.22);
+    color: #5BE5A6;
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 194, 111, 0.4),
+      0 4px 14px -6px rgba(0, 194, 111, 0.4);
+  }
+  .swap-skel-overlay {
+    position: absolute; inset: 0;
+    border-radius: 10px;
+    background: linear-gradient(
+      90deg,
+      rgba(15,15,20,0.06) 0%,
+      rgba(15,15,20,0.12) 50%,
+      rgba(15,15,20,0.06) 100%
+    );
+    background-size: 220% 100%;
+    animation: swap-shimmer 1.4s linear infinite;
+    pointer-events: none;
+  }
+  /* Hide the stale value behind the skeleton — without this, the previous
+     estimate flashes through the (semi-transparent) shimmer until the new
+     one resolves. `:has` lets the rule travel along with the skeleton's
+     own conditional render, no extra prop or class wiring. */
+  .swap-input-wrap:has(.swap-skel-overlay) .swap-amount {
+    visibility: hidden;
+  }
+  :where(html,body)[data-theme="dark"] .swap-skel-overlay {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05) 0%,
+      rgba(255,255,255,0.12) 50%,
+      rgba(255,255,255,0.12) 50.01%,
+      rgba(255,255,255,0.05) 100%
+    );
+    background-size: 220% 100%;
+  }
+  /* Inline skeleton for the rate line — sized to a typical rate string. */
+  .swap-skel-line {
+    display: inline-block;
+    height: 14px; width: 180px; border-radius: 6px;
+    background: linear-gradient(
+      90deg,
+      rgba(15,15,20,0.06) 0%,
+      rgba(15,15,20,0.12) 50%,
+      rgba(15,15,20,0.06) 100%
+    );
+    background-size: 220% 100%;
+    animation: swap-shimmer 1.4s linear infinite;
+  }
+  :where(html,body)[data-theme="dark"] .swap-skel-line {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05) 0%,
+      rgba(255,255,255,0.14) 50%,
+      rgba(255,255,255,0.05) 100%
+    );
+    background-size: 220% 100%;
+  }
+
+  /* Auxiliary slot below the CTA — holds either the Pro upsell (swap mode)
+     or the fiat provider strip. Min-height matches the fiat strip so the
+     widget doesn't jump when toggling modes or when the Pro upsell is
+     hidden because there's no cashback on the pair. */
+  .swap-aux {
+    /* Slot below the CTA — hosts the cashback upsell (Swap) or the fiat
+       provider strip (Buy/Sell). Conditionally rendered, so when neither
+       is active the slot doesn't reserve any space. The min-height keeps
+       the row visually stable across the skeleton → content transition.
+       Trimmed from a previous 84px / 14px gap pair so the field stack
+       above could thicken without the widget bloating. */
+    margin-top: 8px;
+    min-height: 56px;
+  }
+
+  /* Pro upgrade — minimal secondary */
+  .swap-pro {
+    width: 100%; height: 56px;
+    /* At rest the Pro upsell reads as a quiet text-style link — no
+       border, no fill. Hover reveals the gradient and ring, "becoming a
+       button" only when the user hovers in. */
+    background: transparent;
+    box-shadow: none;
+    border: 0; cursor: pointer;
+    border-radius: 14px;
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  /* Keyboard focus-visible — quiet ring just for a11y, doesn't trigger
+     the full hover treatment (per design: button look is hover-only). */
+  .swap-pro:focus-visible {
+    outline: 2px solid rgba(124, 92, 255, 0.6);
+    outline-offset: 2px;
+  }
+  .swap-pro-text { color: var(--ink); }
+  .swap-pro-text strong {
+    background: linear-gradient(90deg, #C84BFF 0%, #7C5CFF 50%, #4E95FF 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 700;
+  }
+  .swap-pro-amount { font-weight: 700; color: var(--ink); }
+  .swap-pro::after {
+    content: '→'; font-size: 16px; opacity: 0.4; transition: all 200ms ease;
+  }
+  .swap-pro:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(124, 92, 255, 0.14) 0%,
+      rgba(78, 149, 255, 0.10) 100%
+    );
+    box-shadow: inset 0 0 0 1px rgba(124, 92, 255, 0.32);
+    color: var(--ink);
+    transform: translateY(-1px);
+  }
+  .swap-pro:hover::after { opacity: 1; transform: translateX(3px); }
+  /* Dark theme: same "quiet text link at rest" treatment as light. The
+     gradient + ring only show on hover (handled below) — at rest the
+     button reads as a typographic link, no visible border. */
+  :where(html,body)[data-theme="dark"] .swap-pro {
+    background: transparent;
+    box-shadow: none;
+  }
+  :where(html,body)[data-theme="dark"] .swap-pro:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(141, 124, 255, 0.22) 0%,
+      rgba(78, 149, 255, 0.16) 100%
+    );
+    box-shadow: inset 0 0 0 1px rgba(141, 124, 255, 0.32);
+  }
+  /* Skeleton sized to a typical "Get 0.012345 ETH more with Pro" line. */
+  .swap-skel-pro {
+    display: inline-block;
+    height: 14px; width: 220px; border-radius: 6px;
+    background: linear-gradient(
+      90deg,
+      rgba(15,15,20,0.06) 0%,
+      rgba(15,15,20,0.12) 50%,
+      rgba(15,15,20,0.06) 100%
+    );
+    background-size: 220% 100%;
+    animation: swap-shimmer 1.4s linear infinite;
+  }
+  :where(html,body)[data-theme="dark"] .swap-skel-pro {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05) 0%,
+      rgba(255,255,255,0.14) 50%,
+      rgba(255,255,255,0.05) 100%
+    );
+    background-size: 220% 100%;
+  }
+  /* Suppress the trailing arrow while the skeleton is up. */
+  .swap-pro:has(.swap-skel-pro)::after { content: none; }
+
+  /* Fiat-mode provider strip — replaces the Pro upsell while the Buy/Sell
+     tab is active. Two rows: provider line + supported payment methods.
+     Margin-top is owned by `.swap-aux` so all aux content shares the same
+     gap from the CTA. */
+  .swap-fiat-rec {
+    padding: 12px 4px 0;
+    border-top: 1px solid rgba(15, 15, 20, 0.06);
+  }
+  :where(html,body)[data-theme="dark"] .swap-fiat-rec {
+    border-top-color: rgba(255, 255, 255, 0.06);
+  }
+  .swap-fiat-rec { position: relative; }
+  .swap-fiat-rec .rec-line {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .swap-fiat-rec .rec-l {
+    display: inline-flex; align-items: center; gap: 8px;
+    /* Strip is a dense one-line summary — same readability-vs-density
+       trade-off as the picker rows, so it gets the same below-floor
+       treatment. The 16px floor only applies to body copy, not metadata
+       widgets like this. */
+    font-size: 13px; color: var(--ink);
+  }
+  .swap-fiat-rec .rec-prov-name { color: var(--ink); font-weight: 600; }
+  /* Right-side cluster of the trigger row — selected provider's quote
+     plus the "Change ▾" button. Mirrors the layout of a dropdown row so
+     the trigger reads as "the row you just picked". */
+  .swap-fiat-rec .rec-r {
+    display: inline-flex; align-items: center; gap: 10px;
+    flex: 0 0 auto; min-width: 0;
+  }
+  .swap-fiat-rec .rec-amount {
+    font-size: 13px; color: var(--ink-2); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    /* Truncate gracefully on very narrow viewports rather than wrap, so
+       the "Change ▾" affordance stays put against the right edge. */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Badge base — pill with two variants:
+     - `rec-badge-recommended`: purple in the Guardarian hue family
+       (Guardarian's sprite is a deep indigo — the badge picks up the same
+       branch of the spectrum so the recommended pill reads as "ours").
+     - `rec-badge-best`: neutral green, marks whichever provider the
+       upstream returned the cheapest quote from. */
+  .swap-fiat-rec .rec-badge,
+  .prov-pop .rec-badge {
+    display: inline-flex; align-items: center;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 999px;
+    background: rgba(15, 15, 20, 0.06);
+    color: var(--ink-2);
+  }
+  .swap-fiat-rec .rec-badge-recommended,
+  .prov-pop .rec-badge-recommended {
+    background: rgba(80, 57, 224, 0.14);
+    color: #4838c5;
+  }
+  :where(html,body)[data-theme="dark"] .rec-badge-recommended {
+    background: rgba(141, 124, 255, 0.22);
+    color: #b9a4ff;
+  }
+  .swap-fiat-rec .rec-badge-best,
+  .prov-pop .rec-badge-best {
+    background: rgba(0, 194, 111, 0.16);
+    color: #058150;
+  }
+  :where(html,body)[data-theme="dark"] .rec-badge-best {
+    background: rgba(0, 194, 111, 0.18); color: #3CC793;
+  }
+
+  /* "Change ▾" button — opens the provider selector. Hidden when only one
+     provider is available (no selection to make). */
+  .swap-fiat-rec .rec-change {
+    font: inherit;
+    font-size: 12px; color: var(--ink-3);
+    background: transparent; border: 0; padding: 4px 6px; margin-right: -6px;
+    border-radius: 6px; cursor: pointer;
+    transition: background 120ms, color 120ms;
+  }
+  .swap-fiat-rec .rec-change:hover { background: rgba(15, 15, 20, 0.05); color: var(--ink); }
+  :where(html,body)[data-theme="dark"] .swap-fiat-rec .rec-change:hover { background: rgba(255,255,255,0.06); }
+  .swap-fiat-rec .rec-change-caret { font-size: 10px; margin-left: 2px; opacity: 0.7; }
+
+  /* Skeleton variant — same outer shape as the live strip so swapping in
+     and out doesn't shift layout. Each `.swap-skel-block` is a shimmer pill
+     sized via per-class width/height below. */
+  .swap-skel-block {
+    display: inline-block;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      rgba(15,15,20,0.06) 0%,
+      rgba(15,15,20,0.12) 50%,
+      rgba(15,15,20,0.06) 100%
+    );
+    background-size: 220% 100%;
+    animation: swap-shimmer 1.4s linear infinite;
+    flex: 0 0 auto;
+  }
+  :where(html,body)[data-theme="dark"] .swap-skel-block {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.05) 0%,
+      rgba(255,255,255,0.14) 50%,
+      rgba(255,255,255,0.05) 100%
+    );
+    background-size: 220% 100%;
+  }
+  .rec-skel-logo  { width: 20px; height: 20px; border-radius: 999px; }
+  .rec-skel-name  { width: 96px; height: 12px; border-radius: 6px; }
+  .rec-skel-badge { width: 88px; height: 16px; }
+  .rec-skel-change { width: 56px; height: 12px; border-radius: 6px; }
+  .rec-skel-pay-lbl { width: 48px; height: 10px; border-radius: 5px; margin-right: 2px; }
+  .rec-skel-pay-logo { width: 26px; height: 14px; border-radius: 3px; }
+
+  /* Empty state — friendly fallback when upstream returned no providers
+     for this pair (rare). Centered single line so it lives inside the same
+     vertical envelope as the strip. */
+  .swap-fiat-rec-empty {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 64px;
+    color: var(--ink-3); font-size: 13px;
+  }
+  .rec-empty-emoji { font-size: 18px; line-height: 1; }
+  .rec-empty-msg { font-weight: 500; }
+
+  .swap-fiat-rec .rec-pay {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .swap-fiat-rec .rec-pay-lbl {
+    font-size: 11px; color: var(--ink-3); margin-right: 2px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .swap-fiat-rec .rec-pay-more {
+    font-size: 10px; color: var(--ink-3); font-weight: 600;
+    padding: 2px 6px; border-radius: 999px;
+    background: rgba(15, 15, 20, 0.05);
+  }
+  :where(html,body)[data-theme="dark"] .swap-fiat-rec .rec-pay-more {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Provider logo — single sprite SVG with brand color baked in (24×24
+     viewBox, gradient fills). Same file works on both themes. */
+  img.prov-logo { display: block; flex: 0 0 auto; object-fit: contain; }
+  span.prov-logo {
+    display: inline-grid; place-items: center; flex: 0 0 auto;
+    border-radius: 6px; overflow: hidden;
+  }
+  .prov-logo-fallback {
+    color: #fff; font-size: 11px; font-weight: 700;
+  }
+
+  /* Payment method icon — small pill containing the brand mark.
+     Source SVGs vary in aspect ratio (Visa is wider than tall, SEPA has
+     two rows of text); we give the pill enough vertical room so the
+     contents sit fully inside instead of being cropped at the bottom. */
+  .pay-logo {
+    width: 32px; height: 20px; border-radius: 4px; flex: 0 0 32px;
+    background: rgba(15, 15, 20, 0.05);
+    display: inline-flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    padding: 2px 4px;
+  }
+  :where(html,body)[data-theme="dark"] .pay-logo { background: rgba(255, 255, 255, 0.08); }
+  .pay-logo img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  /* Same specificity trick as the press logos — without `img` qualifying
+     the variant rule, `display: block` from `.pay-logo img` wins and
+     both variants render. */
+  .pay-logo img.pay-logo-dark { display: none; }
+  :where(html,body)[data-theme="dark"] .pay-logo img.pay-logo-light { display: none; }
+  :where(html,body)[data-theme="dark"] .pay-logo img.pay-logo-dark { display: block; }
+
+  /* Provider selector dropdown — opens under the "Change ▾" button. */
+  .prov-pop {
+    position: absolute;
+    top: 100%; right: 0;
+    margin-top: 6px;
+    width: max(280px, 100%);
+    list-style: none; padding: 6px 0; margin-bottom: 0;
+    background: var(--paper);
+    border-radius: 12px;
+    box-shadow:
+      0 1px 0 rgba(15,15,20,0.04),
+      0 12px 32px rgba(15,15,20,0.16),
+      inset 0 0 0 1px var(--line);
+    z-index: 60;
+    max-height: 300px; overflow-y: auto;
+  }
+  :where(html,body)[data-theme="dark"] .prov-pop {
+    background: #1A1A22;
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.4),
+      0 12px 32px rgba(0,0,0,0.5),
+      inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .prov-pop-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; cursor: pointer;
+    user-select: none;
+  }
+  .prov-pop-row:hover,
+  .prov-pop-row[data-active] { background: var(--paper-2); }
+  :where(html,body)[data-theme="dark"] .prov-pop-row:hover,
+  :where(html,body)[data-theme="dark"] .prov-pop-row[data-active] {
+    background: rgba(255,255,255,0.06);
+  }
+  .prov-pop-row .prov-logo { width: 20px; height: 20px; }
+  .prov-pop-name {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .prov-pop-name strong { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .prov-pop-pay {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    /* Each provider's full method set shows here — wrapping is fine; it's
+       what visually distinguishes Banxa (PIX, ACH) from Guardarian (Revolut,
+       SWIFT) when the first 5 are the same DEFAULT_METHODS slate. */
+  }
+  .prov-pop-pay .pay-logo { width: 28px; height: 16px; flex: 0 0 28px; padding: 1px 3px; }
+  .prov-pop-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    font-size: 12px; color: var(--ink-3);
+    flex: 0 0 auto;
+  }
+  .prov-pop-amount { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
+
+  .swap-incentive {
+    margin-top: 12px; padding: 10px 14px;
+    background: var(--accent-soft); border-radius: 10px;
+    font-size: 16px; color: #006B3D; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  :where(html,body)[data-theme="dark"] .swap-incentive { background: rgba(0,194,111,0.12); color: #5BE5A6; }
+  .swap-incentive .gift {
+    width: 18px; height: 18px; border-radius: 4px; background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-size: 16px;
+  }
+
+  .swap-meta {
+    margin-top: 12px; display: flex; gap: 16px; justify-content: center;
+    font-size: 16px; color: var(--ink-3); font-weight: 500;
+  }
+  .swap-meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .swap-meta .check { color: var(--accent); }
+
+  /* mode dropdown menu */
+  .mode-menu {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--paper); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(15,15,20,0.12), inset 0 0 0 1px var(--line);
+    padding: 8px; min-width: 220px;
+    /* Float above .swap-flip (z=2) and the swap-token chips. */
+    z-index: 40;
+    display: none;
+  }
+  .mode-menu[data-open="true"] { display: block; }
+  .mode-menu .item {
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+  }
+  .mode-menu .item:hover { background: var(--paper-2); }
+  .mode-menu .item .ic {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--paper-2);
+    display: grid; place-items: center;
+  }
+  .mode-menu .item .sub { font-size: 16px; color: var(--ink-3); display: block; font-weight: 400; }
+
+  /* ───────────── CURRENCY STRIP ───────────── */
+  .curr-strip {
+    margin: 24px 40px 0; padding: 16px 8px;
+    background: var(--paper-2); border-radius: 16px;
+    display: flex; align-items: center; gap: 8px;
+    overflow: hidden;
+  }
+  .curr-strip-label {
+    flex: 0 0 auto; padding: 0 16px;
+    font-size: 16px; font-weight: 700; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    border-right: 1px solid var(--line);
+    align-self: stretch; display: flex; align-items: center;
+  }
+  .curr-track { display: flex; gap: 6px; flex: 1; overflow: hidden; }
+  .curr-pill {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 14px 8px 8px; height: 44px; border-radius: 999px;
+    background: var(--paper); box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer; transition: all 150ms;
+  }
+  .curr-pill:hover { box-shadow: inset 0 0 0 1px var(--ink-3); }
+  .curr-pill .coin { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: #fff; font-size: 16px; font-weight: 800; }
+  .curr-pill .meta { display: flex; flex-direction: column; line-height: 1.1; }
+  .curr-pill .name { font-size: 16px; font-weight: 600; color: var(--ink); }
+  .curr-pill .px { font-size: 16px; color: var(--ink-3); margin-top: 1px; }
+  .curr-pill .delta { font-size: 16px; font-weight: 600; margin-left: 6px; }
+  .curr-pill .delta.up { color: var(--accent); }
+  .curr-pill .delta.down { color: #D80027; }
+
+  /* ───────────── FEATURES BLOCK (photo cards) ───────────── */
+  .fb-section {
+    padding: 140px 40px 80px;
+    color: var(--ink);
+  }
+  .fb-head {
+    text-align: center; max-width: 720px; margin: 0 auto 48px;
+  }
+  .fb-head .label {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 16px;
+  }
+  .fb-head h2 {
+    font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+    margin: 0; color: var(--ink);
+  }
+  .fb-head .fb-sub {
+    font-size: 18px; color: var(--ink-2); line-height: 1.5;
+    margin: 20px auto 0; max-width: 580px;
+  }
+
+  .fb-tabs { display: flex; justify-content: center; margin-bottom: 36px; }
+  .fb-tab-group {
+    display: inline-flex; gap: 2px; padding: 5px;
+    background: var(--paper-2);
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--line-soft);
+  }
+  .fb-tab {
+    border: 0; background: transparent; cursor: pointer;
+    padding: 8px 18px; height: 36px; border-radius: 999px;
+    font-family: inherit; font-size: 16px; font-weight: 500;
+    color: var(--ink-3);
+    transition: color 150ms, background 150ms;
+  }
+  .fb-tab:hover { color: var(--ink-2); }
+  .fb-tab.on {
+    background: var(--ink); color: var(--paper);
+    font-weight: 600;
+  }
+  :where(html,body)[data-theme="dark"] .fb-tab.on { background: var(--paper); color: var(--ink); }
+
+  .fb-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    max-width: 1360px; margin: 0 auto;
+  }
+  .fb-card {
+    border-radius: 22px; overflow: hidden;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex; flex-direction: column;
+    transition: transform 250ms ease, box-shadow 250ms ease;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 0 1px var(--line-soft), 0 12px 32px -16px rgba(15,15,20,0.10);
+  }
+  :where(html,body)[data-theme="dark"] .fb-card {
+    background: #14141A;
+    color: #fff;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(15,15,20,0.30);
+  }
+  .fb-card:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 0 1px var(--line), 0 22px 48px -16px rgba(15,15,20,0.18); }
+  :where(html,body)[data-theme="dark"] .fb-card:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 22px 48px -16px rgba(15,15,20,0.45); }
+
+  .fb-vis {
+    aspect-ratio: 1 / 1.05;
+    position: relative; overflow: hidden;
+  }
+  .fb-vis-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+  }
+  /* Tonal placeholder textures — moody, photographic feel without photos */
+  .tone-graphite .fb-vis-bg {
+    background:
+      radial-gradient(circle at 30% 28%, rgba(255,255,255,0.18), transparent 55%),
+      radial-gradient(circle at 80% 90%, rgba(0,0,0,0.6), transparent 60%),
+      linear-gradient(160deg, #2A2C36 0%, #14141A 70%);
+  }
+  .tone-plum .fb-vis-bg {
+    background:
+      radial-gradient(circle at 70% 30%, rgba(255,180,210,0.28), transparent 55%),
+      radial-gradient(circle at 20% 90%, rgba(0,0,0,0.55), transparent 60%),
+      linear-gradient(160deg, #3B1E3F 0%, #1E1023 70%);
+  }
+  .tone-amber .fb-vis-bg {
+    background:
+      radial-gradient(circle at 60% 30%, rgba(255,200,120,0.32), transparent 60%),
+      radial-gradient(circle at 15% 90%, rgba(0,0,0,0.5), transparent 60%),
+      linear-gradient(160deg, #3D2A14 0%, #1E1308 70%);
+  }
+  .tone-teal .fb-vis-bg {
+    background:
+      radial-gradient(circle at 50% 30%, rgba(120,220,200,0.28), transparent 60%),
+      radial-gradient(circle at 80% 95%, rgba(0,0,0,0.55), transparent 60%),
+      linear-gradient(160deg, #0E2D2C 0%, #0A1717 70%);
+  }
+  /* Subtle film grain on top */
+  .fb-vis::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 50%, rgba(0,0,0,0.35) 100%);
+    pointer-events: none;
+  }
+
+  /* Overlay positions */
+  .fb-pos-tl { position: absolute; top: 18px; left: 18px; }
+  .fb-pos-tr { position: absolute; top: 18px; right: 18px; }
+  .fb-pos-bl { position: absolute; bottom: 18px; left: 18px; }
+  .fb-pos-br { position: absolute; bottom: 18px; right: 18px; }
+  .fb-pos-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Pill — light, glassy */
+  .fb-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,0.94);
+    color: #14141A;
+    font-size: 16px; font-weight: 600; letter-spacing: -0.005em;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    z-index: 2;
+  }
+  .fb-pill-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,194,111,0.18);
+  }
+
+  /* Chip — translucent on photo */
+  .fb-chip {
+    padding: 8px 14px; border-radius: 14px;
+    background: rgba(255,255,255,0.16);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    border: 1px solid rgba(255,255,255,0.22);
+    z-index: 2;
+  }
+
+  /* Ticker — mini stocks/RWA card */
+  .fb-ticker {
+    z-index: 2;
+    background: rgba(20,20,26,0.78);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 12px 14px;
+    min-width: 160px;
+    display: flex; flex-direction: column; gap: 6px;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .fb-tk-row {
+    display: flex; justify-content: space-between; gap: 14px;
+    font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .fb-tk-row .up { color: #4ED9A0; }
+  .fb-tk-row .dn { color: #FF7A5C; }
+
+  /* Gauge — circular LTV indicator */
+  .fb-gauge {
+    z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .fb-gauge-ring {
+    width: 96px; height: 96px; border-radius: 999px;
+    background:
+      conic-gradient(#4ED9A0 0 70%, rgba(255,255,255,0.12) 70% 100%);
+    display: grid; place-items: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.10);
+    position: relative;
+  }
+  .fb-gauge-ring::before {
+    content: ''; position: absolute; inset: 8px; border-radius: 999px;
+    background: rgba(20,20,26,0.92); backdrop-filter: blur(8px);
+  }
+  .fb-gauge-ring span {
+    position: relative; z-index: 1;
+    color: #fff; font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .fb-gauge-cap {
+    font-size: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* Caption */
+  .fb-caption {
+    padding: 22px 22px 24px;
+    background: var(--paper);
+  }
+  :where(html,body)[data-theme="dark"] .fb-caption {
+    background: linear-gradient(180deg, #14141A 0%, #0E0E12 100%);
+  }
+  .fb-caption-title {
+    font-size: 18px; font-weight: 600; line-height: 1.25;
+    margin: 0 0 6px; color: var(--ink); letter-spacing: -0.015em;
+  }
+  :where(html,body)[data-theme="dark"] .fb-caption-title { color: #fff; }
+  .fb-caption-sub {
+    font-size: 16px; color: var(--ink-3);
+    margin: 0; line-height: 1.45;
+  }
+  :where(html,body)[data-theme="dark"] .fb-caption-sub { color: rgba(255,255,255,0.55); }
+
+  /* ───────────── PRODUCTS BENTO ───────────── */
+  .products {
+    padding: 56px 40px 80px;
+  }
+  .products-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 24px;
+  }
+  .products-head h2 {
+    margin: 0; font-size: 38px; line-height: 1.02; letter-spacing: -0.03em; font-weight: 800;
+  }
+  .products-head .sub {
+    margin-top: 8px; font-size: 16px; color: var(--ink-2); max-width: 460px;
+  }
+  .products-head .label {
+    font-size: 16px; font-weight: 600; color: var(--ink-3);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .all-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none;
+  }
+  .all-link::after {
+    content: '→'; transition: transform 150ms;
+  }
+  .all-link:hover::after { transform: translateX(4px); }
+
+  .bento {
+    display: grid; grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+  .tile {
+    background: var(--paper-2); border-radius: 20px;
+    padding: 24px; min-height: 220px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+    cursor: pointer;
+  }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(15,15,20,0.06); }
+  .tile .ic {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center; background: var(--paper);
+    color: var(--ink);
+  }
+  .tile h3 {
+    margin: 0; font-size: 22px; line-height: 1.1; letter-spacing: -0.01em; font-weight: 700;
+  }
+  .tile p {
+    margin: 6px 0 0; font-size: 16px; line-height: 1.4; color: var(--ink-2);
+  }
+  .tile.dark { background: var(--ink); color: var(--paper); }
+  .tile.dark p { color: rgba(245,244,242,0.65); }
+  .tile.dark .ic { background: rgba(255,255,255,0.08); color: var(--paper); }
+  .tile.green { background: var(--accent); color: #fff; }
+  .tile.green p { color: rgba(255,255,255,0.85); }
+  .tile.green .ic { background: rgba(255,255,255,0.18); color: #fff; }
+
+  .tile-tag {
+    position: absolute; top: 20px; right: 20px;
+    font-size: 16px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 999px;
+    background: var(--paper); color: var(--ink-2);
+  }
+  .tile.dark .tile-tag, .tile.green .tile-tag { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+
+  .tile-stat {
+    font-size: 56px; font-weight: 800; letter-spacing: -0.04em; line-height: 1;
+  }
+  .tile-stat .unit { font-size: 22px; opacity: 0.6; font-weight: 600; }
+
+  /* mini chart */
+  .mini-chart { height: 60px; margin-top: auto; }
+  .mini-chart svg { width: 100%; height: 100%; }
+
+  /* market list inside dark tile */
+  .mkt-list { margin-top: 16px; }
+  .mkt-row {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 12px;
+    padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 16px; align-items: center;
+  }
+  .mkt-row:first-child { border-top: 0; }
+  .mkt-row .nm { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .mkt-row .coin { width: 22px; height: 22px; border-radius: 999px; }
+  .mkt-row .px { color: rgba(245,244,242,0.7); font-variant-numeric: tabular-nums; }
+  .mkt-row .dl { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mkt-row .dl.up { color: #5BE5A6; }
+  .mkt-row .dl.down { color: #FF7A5C; }
+
+  .card-illu {
+    position: absolute; right: 16px; bottom: 16px;
+    width: 160px; height: 100px; border-radius: 12px;
+    background: linear-gradient(135deg, #2A2A35 0%, #0F0F14 100%);
+    transform: rotate(-8deg);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    padding: 12px; display: flex; flex-direction: column; justify-content: space-between;
+    color: #fff;
+  }
+  .card-illu .num { font-size: 16px; letter-spacing: 0.18em; opacity: 0.7; }
+  .card-illu .br { font-size: 16px; font-weight: 800; color: var(--accent); letter-spacing: 0.08em; }
+
+  /* Predictions list */
+  .pm-feat {
+    margin-top: 16px; padding: 14px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .pm-feat-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; margin-bottom: 12px;
+  }
+  .pm-feat-cat {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 4px;
+  }
+  .pm-feat-q { font-size: 16px; font-weight: 600; color: #fff; line-height: 1.3; }
+  .pm-feat-vol { text-align: right; flex-shrink: 0; }
+  .pm-feat-vol-num {
+    font-size: 18px; font-weight: 800; color: #fff;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .pm-feat-vol-lbl {
+    font-size: 16px; color: rgba(255,255,255,0.6); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .pm-bar {
+    display: flex; height: 36px; border-radius: 10px; overflow: hidden;
+    background: rgba(0,0,0,0.18);
+  }
+  .pm-bar-yes, .pm-bar-no {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; font-size: 16px; font-weight: 700;
+    font-variant-numeric: tabular-nums; gap: 8px;
+  }
+  .pm-bar-yes {
+    background: rgba(255,255,255,0.95); color: var(--accent);
+  }
+  .pm-bar-no {
+    flex: 1; color: #fff;
+  }
+
+  .pm-list { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .pm-row {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+    padding: 9px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    font-size: 16px;
+  }
+  .pm-q { color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pm-price { font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
+  .pm-ch { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pm-ch.up { color: #C8FFE5; }
+  .pm-ch.down { color: #FFD0C8; }
+
+  /* Price targets chart (Trading tile) */
+  .tgt-chart { margin-top: 16px; }
+  .tgt-chart-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .tgt-pair { font-size: 16px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.06em; margin-right: 10px; }
+  .tgt-px { font-size: 18px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; margin-right: 8px; }
+  .tgt-ch { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tgt-ch.up { color: #5BE5A6; }
+  .tgt-range {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 4px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);
+  }
+  .tgt-svg { width: 100%; height: 130px; display: block; overflow: visible; }
+  .tgt-actions { margin-top: 14px; display: flex; gap: 6px; }
+  .tgt-pill {
+    font-size: 16px; font-weight: 600;
+    padding: 6px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Stocks list */
+  .stocks-list { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums; }
+  .stk-row {
+    display: grid; grid-template-columns: 50px 1fr auto auto; gap: 10px;
+    align-items: center; padding: 6px 0;
+    border-bottom: 1px dashed var(--line-soft);
+    font-size: 16px;
+  }
+  .stk-row:last-child { border-bottom: 0; }
+  .stk-s { font-weight: 700; letter-spacing: 0.04em; }
+  .stk-n { color: var(--ink-2); font-size: 16px; }
+  .stk-p { font-weight: 600; }
+  .stk-d.up { color: var(--accent); font-weight: 600; font-size: 16px; }
+  .stk-d.down { color: #E0563A; font-weight: 600; font-size: 16px; }
+
+  /* Loan calc */
+  .loan-calc { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .loan-row { display: flex; justify-content: space-between; font-size: 16px; color: var(--ink-2); align-items: baseline; }
+  .loan-amt { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .loan-bar { height: 4px; background: var(--line-soft); border-radius: 999px; overflow: hidden; margin: 4px 0 2px; }
+  .loan-bar span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+
+  /* APR grid (Earn) */
+  .apr-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .apr-grid > div {
+    padding: 10px 8px; border-radius: 10px;
+    background: var(--paper); display: flex; flex-direction: column; gap: 2px;
+    border: 1px solid var(--line-soft);
+  }
+  .apr-grid span { font-size: 16px; color: var(--ink-3); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .apr-grid strong { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+
+  /* Perps pairs */
+  .perps-pairs { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .perps-pairs span {
+    font-size: 16px; font-weight: 600; padding: 5px 9px;
+    background: var(--paper); border-radius: 6px;
+    letter-spacing: 0.02em; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line-soft);
+  }
+  .perps-pairs .more { background: transparent; color: var(--ink-3); border-style: dashed; }
+
+  /* Private send dots */
+  .priv-dots { margin-top: 16px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .priv-dots span {
+    aspect-ratio: 1; border-radius: 999px;
+    background: var(--paper-2);
+    box-shadow: inset 0 0 0 1px var(--line-soft);
+  }
+  .priv-dots span:nth-child(3),
+  .priv-dots span:nth-child(6) { background: var(--ink); box-shadow: none; }
+
+  /* Soon tile — muted, no green */
+  .tile.soon {
+    background: var(--paper-2);
+    position: relative;
+  }
+  .tile.soon h3 { color: var(--ink); }
+  .tile.soon p { color: var(--ink-2); }
+  .tile.soon .soon-tag {
+    background: transparent;
+    color: var(--ink-3);
+    box-shadow: inset 0 0 0 1px var(--line);
+    letter-spacing: 0.08em;
+  }
+  :where(html,body)[data-theme="dark"] .tile.soon { background: rgba(255,255,255,0.03); }
+  :where(html,body)[data-theme="dark"] .apr-grid > div,
+  :where(html,body)[data-theme="dark"] .perps-pairs span { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+  :where(html,body)[data-theme="dark"] .priv-dots span { background: rgba(255,255,255,0.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  :where(html,body)[data-theme="dark"] .priv-dots span:nth-child(3),
+  :where(html,body)[data-theme="dark"] .priv-dots span:nth-child(6) { background: var(--paper); box-shadow: none; }
+
+  /* Tweaks toggle button (mini, floating) */
+  /* ════════════════════════════════════════════════════════
+   MAIN SECTIONS — homepage blocks 03–11
+   Light-first, dark-theme adaptive. 140px section padding.
+   ═══════════════════════════════════════════════════════ */
+
+/* Shared section primitives */
+.section-head {
+  text-align: center; max-width: 760px; margin: 0 auto 56px;
+}
+.section-head .label,
+.tr-head .label, .rp-head .label, .tiers-head .label,
+.rates-head .label, .ps-head .label, .apps-r .label,
+.reach-r .label, .family-head .label, .faq-head .label {
+  font-size: 16px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 16px;
+  display: block;
+}
+.section-head h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: var(--ink);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ═══ 03 — Track record (huge numbers, hero scale) ═══ */
+.track-record {
+  padding: 140px 40px;
+  border-top: 1px solid var(--line);
 }
+.tr-head {
+  max-width: 1280px; margin: 0 auto 80px;
+}
+.tr-head h2 {
+  font-size: 88px; font-weight: 700; letter-spacing: -0.035em; line-height: 0.96;
+  margin: 0; color: var(--ink); max-width: 900px;
+}
+.tr-head h2 .tr-h2-light {
+  color: var(--ink-3); font-weight: 300;
+}
+.tr-grid {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  border-top: 1px solid var(--line);
+}
+.tr-stat {
+  padding: 40px 8px 0;
+  border-right: 1px solid var(--line);
+}
+.tr-stat:last-child { border-right: 0; }
+.tr-num {
+  font-size: 96px; font-weight: 200; letter-spacing: -0.045em; line-height: 0.92;
+  color: var(--ink); font-feature-settings: "ss01";
+  font-variant-numeric: tabular-nums;
+}
+.tr-num .tr-unit {
+  font-size: 32px; font-weight: 300; letter-spacing: -0.02em;
+  color: var(--ink-3); display: inline-block; margin-left: 4px;
+}
+.tr-lbl {
+  margin-top: 24px;
+  font-size: 16px; color: var(--ink-2); font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+/* ═══ 04 — Reviews & partners ═══ */
+.rp-section {
+  padding: 140px 40px;
+  position: relative;
+  isolation: isolate;
+  /* No `overflow: hidden` — blobs are allowed to drift past the section's
+     visible edge into the gutter above (and below). That's the same
+     behaviour Hero has: atmospheric color, not a boxed band. */
+  /* Warm spot bg fades wide and gentle: solid core only at the very
+     middle, gradient runs all the way to transparent so there's no
+     hard rectangular boundary where the section ends. */
+  background: radial-gradient(
+    ellipse clamp(900px, 95vw, 2200px) 130% at 50% 50%,
+    var(--paper-2) 0%,
+    var(--paper-2) 30%,
+    transparent 100%
+  );
+}
+/* Hero-style multi-color blob composition. Sized vw-relative so wide
+   displays get a bigger color pool rather than a fixed-size puddle.
+   Lives behind the cards so the glass effect picks up brand hues. */
+.rp-section::before {
+  content: '';
+  position: absolute;
+  top: -240px;
+  left: 50%;
+  width: clamp(900px, 110vw, 2200px);
+  height: clamp(700px, 60vw, 1300px);
+  background:
+    radial-gradient(circle at 20% 24%, rgba(0,194,111,0.30), transparent 42%),
+    radial-gradient(circle at 78% 16%, rgba(255,180,0,0.22), transparent 38%),
+    radial-gradient(circle at 58% 52%, rgba(124,92,255,0.30), transparent 46%),
+    radial-gradient(circle at 14% 70%, rgba(78,149,255,0.26), transparent 44%),
+    radial-gradient(circle at 86% 76%, rgba(232,121,249,0.24), transparent 42%),
+    radial-gradient(circle at 44% 92%, rgba(255,106,85,0.20), transparent 42%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  transform: translateX(-50%);
+  animation: rp-blob-shift 22s ease-in-out infinite alternate;
+}
+/* Secondary blob — softer, drifts on a different cycle so the composition
+   doesn't feel synchronized. */
+.rp-section::after {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  right: -120px;
+  width: clamp(420px, 40vw, 720px);
+  height: clamp(420px, 40vw, 720px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(232,121,249,0.26), transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(124,92,255,0.20), transparent 55%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: -1;
+  animation: rp-blob-shift-2 18s ease-in-out infinite alternate;
+}
+.rp-section > * { position: relative; z-index: 1; }
+/* Dark theme: pump the saturation a bit so the spots register against
+   the deeper bg. */
+:where(html,body)[data-theme="dark"] .rp-section::before {
+  background:
+    radial-gradient(circle at 20% 24%, rgba(0,194,111,0.42), transparent 42%),
+    radial-gradient(circle at 78% 16%, rgba(255,180,0,0.30), transparent 38%),
+    radial-gradient(circle at 58% 52%, rgba(124,92,255,0.42), transparent 46%),
+    radial-gradient(circle at 14% 70%, rgba(78,149,255,0.34), transparent 44%),
+    radial-gradient(circle at 86% 76%, rgba(232,121,249,0.32), transparent 42%);
+}
+@keyframes rp-blob-shift {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  50%  { transform: translate(calc(-50% - 30px), 18px) scale(1.04); }
+  100% { transform: translate(calc(-50% + 24px), -12px) scale(0.98); }
+}
+@keyframes rp-blob-shift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(60px, -40px) scale(1.08); }
+}
+/* Honor system motion preference — no drift, just static hues. */
+@media (prefers-reduced-motion: reduce) {
+  .rp-section::before,
+  .rp-section::after { animation: none; }
+}
+
+/* ═══ 04b — Press block ═══
+   Same envelope language as the reviews section (radial spot bg, hero
+   blobs, glass cards) so the two read as a continuous editorial pair. */
+.pr-section {
+  padding: 120px 40px;
+  position: relative;
+  isolation: isolate;
+  /* Same reasoning as `.rp-section` — let the spots breathe past the
+     section's visible bounds rather than clipping them at hard edges. */
+  background: radial-gradient(
+    ellipse clamp(900px, 95vw, 2200px) 130% at 50% 50%,
+    var(--paper-2) 0%,
+    var(--paper-2) 30%,
+    transparent 100%
+  );
+}
+.pr-section::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  width: clamp(900px, 110vw, 2200px);
+  height: clamp(700px, 60vw, 1300px);
+  background:
+    radial-gradient(circle at 22% 28%, rgba(78,149,255,0.28), transparent 42%),
+    radial-gradient(circle at 78% 18%, rgba(0,194,111,0.22), transparent 38%),
+    radial-gradient(circle at 56% 56%, rgba(124,92,255,0.26), transparent 46%),
+    radial-gradient(circle at 14% 76%, rgba(232,121,249,0.20), transparent 44%),
+    radial-gradient(circle at 88% 80%, rgba(255,180,0,0.18), transparent 42%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  transform: translateX(-50%);
+  animation: rp-blob-shift 26s ease-in-out infinite alternate;
+}
+.pr-section::after {
+  content: '';
+  position: absolute;
+  top: -120px; left: -160px;
+  width: clamp(420px, 40vw, 720px);
+  height: clamp(420px, 40vw, 720px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(124,92,255,0.24), transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(78,149,255,0.18), transparent 55%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: -1;
+  animation: rp-blob-shift-2 20s ease-in-out infinite alternate;
+}
+.pr-section > * { position: relative; z-index: 1; }
+:where(html,body)[data-theme="dark"] .pr-section::before {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(78,149,255,0.40), transparent 42%),
+    radial-gradient(circle at 78% 18%, rgba(0,194,111,0.34), transparent 38%),
+    radial-gradient(circle at 56% 56%, rgba(124,92,255,0.40), transparent 46%),
+    radial-gradient(circle at 14% 76%, rgba(232,121,249,0.30), transparent 44%);
+}
+
+.pr-head {
+  max-width: 1280px; margin: 0 auto 56px;
+}
+.pr-eyebrow {
+  display: inline-block;
+  font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.pr-section .pr-head h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: var(--ink); max-width: 900px;
+}
+
+/* Wide trailer card — clickable preview that opens the lightbox. The
+   button itself carries a faint linear gradient so it reads as a
+   "video tile" even before the user hovers. */
+/* Featured row: trailer 2/3, paired article 1/3. The article stretches
+   to the trailer's height so the row reads as one unit. */
+.pr-feature {
+  max-width: 1280px; margin: 0 auto 16px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  /* Stack on narrow viewports — 1/3 column would crush the article. */
+  .pr-feature { grid-template-columns: 1fr; }
+}
+.pr-trailer {
+  display: block; width: 100%; height: 100%;
+  position: relative;
+  /* Aspect ratio drives the row height when not stacked; the paired card
+     stretches to match. 16:9 keeps the documentary still cinematic at
+     2/3 width and gives the side card a comfortable square-ish shape. */
+  aspect-ratio: 16 / 9;
+  border: 0; padding: 0; cursor: pointer;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, #1a1d2e 0%, #1f2540 50%, #2b1a4a 100%);
+  background-size: cover; background-position: center;
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 60px -28px rgba(15, 15, 20, 0.4);
+}
+.pr-trailer:hover { transform: translateY(-2px); }
+.pr-trailer:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+/* Soft top→bottom darken so the white text reads against any backdrop. */
+.pr-trailer-overlay {
+  position: absolute; inset: 0;
+  /* Default fallback (no poster): atmospheric color gradients + subtle
+     vertical darken so the white meta text stays legible. */
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.5) 100%),
+    radial-gradient(ellipse 80% 60% at 25% 70%, rgba(78,149,255,0.32), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 80% 30%, rgba(232,121,249,0.28), transparent 70%);
+  pointer-events: none;
+}
+/* When a real poster is set, drop the colored ambient gradients (the
+   poster carries its own composition) and just darken the bottom third
+   so the title/subtitle stay readable on any backdrop. */
+.pr-trailer[data-has-poster] .pr-trailer-overlay {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.55) 80%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+.pr-trailer-meta {
+  position: absolute; left: 40px; bottom: 36px;
+  display: flex; flex-direction: column; gap: 6px;
+  color: #fff; text-align: left;
+}
+.pr-trailer-eyebrow {
+  font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; opacity: 0.72;
+}
+.pr-trailer-title { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+.pr-trailer-sub { font-size: 16px; font-weight: 500; opacity: 0.78; max-width: 520px; }
+.pr-trailer-play {
+  position: absolute; right: 40px; bottom: 36px;
+  width: 64px; height: 64px; border-radius: 999px;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.95); color: #14172a;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  transition: transform 220ms ease;
+}
+.pr-trailer:hover .pr-trailer-play { transform: scale(1.06); }
+.pr-trailer-play svg { margin-left: 3px; /* optical centering for the triangle */ }
+
+/* Press cards — glass treatment matching .rp-review so the two sections
+   share the same editorial language. */
+.pr-cards {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.pr-card {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+          backdrop-filter: blur(24px) saturate(140%);
+  border-radius: 18px;
+  padding: 28px 28px 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 12px 32px -16px rgba(15, 15, 20, 0.18);
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 240px;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.pr-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 24px 48px -16px rgba(15, 15, 20, 0.24);
+}
+:where(html,body)[data-theme="dark"] .pr-card {
+  background: rgba(40, 40, 50, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 12px 32px -16px rgba(0, 0, 0, 0.5);
+}
+.pr-card-logo { display: inline-flex; height: 28px; }
+.pr-card-logo img { display: block; height: 100%; width: auto; max-width: 160px; }
+/* The variant-hide rules need to out-specificity the `.pr-card-logo img`
+   `display: block` above — without `img` in the selector both light and
+   dark logos render side-by-side. */
+.pr-card-logo img.pr-card-logo-dark { display: none; }
+:where(html,body)[data-theme="dark"] .pr-card-logo img.pr-card-logo-light { display: none; }
+:where(html,body)[data-theme="dark"] .pr-card-logo img.pr-card-logo-dark { display: block; }
+.pr-card-title {
+  font-size: 18px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3;
+  color: var(--ink); margin: 0;
+}
+.pr-card-text {
+  font-size: 16px; line-height: 1.5; color: var(--ink-2);
+  margin: 0; flex: 1;
+}
+.pr-card-cta {
+  font-size: 16px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: 0;
+  transition: color 200ms ease;
+}
+.pr-card:hover .pr-card-cta { color: var(--ink); }
+
+/* Feature variant — sits next to the trailer. Larger radius (so the row
+   reads as a paired unit with the trailer's 24px corners) and slightly
+   bumped title size to fill the taller card body. The flexbox + `flex: 1`
+   on the text makes the CTA stick to the bottom regardless of how tall
+   the trailer makes the row. */
+.pr-card-feature {
+  border-radius: 24px;
+  padding: 32px;
+  min-height: 0; /* let the grid row drive height */
+}
+.pr-card-feature .pr-card-title {
+  font-size: 22px; line-height: 1.25;
+}
+.pr-card-feature .pr-card-text {
+  font-size: 16px;
+}
+
+.pr-foot { max-width: 1280px; margin: 32px auto 0; text-align: center; }
+.pr-foot-link {
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  text-decoration: none; border-bottom: 1px solid var(--ink-3);
+  padding-bottom: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-section::before,
+  .pr-section::after { animation: none; }
+}
+
+/* Video lightbox — full-viewport dimmed dialog. The video element
+   itself uses HTML5 controls; we just provide the dim, the close
+   affordance, and a max-width frame. */
+.vid-modal {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.82);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+  display: grid; place-items: center;
+  padding: 32px;
+  animation: vid-fade 200ms ease-out;
+}
+@keyframes vid-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.vid-modal-stage {
+  position: relative;
+  width: 100%; max-width: 1280px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 40px 96px -24px rgba(0, 0, 0, 0.6);
+}
+.vid-modal-video { width: 100%; height: 100%; display: block; }
+.vid-modal-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 0; cursor: pointer;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border-radius: 999px;
+  z-index: 2;
+  transition: background 200ms ease;
+}
+.vid-modal-close:hover { background: rgba(0, 0, 0, 0.8); }
+.vid-modal-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.rp-head {
+  max-width: 1280px; margin: 0 auto 64px;
+}
+.rp-head h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: var(--ink); max-width: 900px;
+}
+
+.rp-reviews {
+  max-width: 1280px; margin: 0 auto 80px;
+}
+.rp-reviews-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px;
+}
+.rp-tp {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 16px; color: var(--ink-2);
+}
+.rp-tp strong { color: var(--ink); font-weight: 600; }
+.rp-tp-mark {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: #00B67A; color: #fff;
+  display: grid; place-items: center; font-size: 18px;
+}
+.rp-link {
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  text-decoration: none; border-bottom: 1px solid var(--ink-3);
+  padding-bottom: 2px;
+}
+.rp-reviews-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.rp-review {
+  /* Glass card — sits over the section's colored blobs and lets brand
+     hues bleed through a soft frosted layer. The semi-transparent paper
+     bg + backdrop-blur is the classic glassmorphism recipe; the inset
+     highlight (top inner ring) gives the edge a glassy specular hint. */
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+          backdrop-filter: blur(24px) saturate(140%);
+  border-radius: 18px;
+  padding: 28px 28px 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 12px 32px -16px rgba(15, 15, 20, 0.18);
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 200px;
+}
+:where(html,body)[data-theme="dark"] .rp-review {
+  background: rgba(40, 40, 50, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 12px 32px -16px rgba(0, 0, 0, 0.5);
+}
+.rp-stars {
+  color: #00B67A; font-size: 16px; letter-spacing: 1px;
+}
+.rp-quote {
+  font-size: 18px; line-height: 1.45; letter-spacing: -0.01em;
+  color: var(--ink); margin: 0; font-weight: 500;
+  flex: 1;
+}
+.rp-meta {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 4px;
+}
+.rp-avatar {
+  width: 40px; height: 40px; border-radius: 999px;
+  flex: 0 0 40px;
+  display: grid; place-items: center;
+  background: var(--paper-2);
+  overflow: hidden;
+  object-fit: cover;
+}
+.rp-avatar-letter {
+  color: #fff; font-weight: 700; font-size: 18px;
+  letter-spacing: 0;
+}
+.rp-meta-text {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0; flex: 1;
+}
+.rp-author {
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rp-src {
+  font-size: 16px; color: var(--ink-3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.rp-src-link {
+  color: inherit; text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+.rp-src-link:hover { color: var(--ink); }
+
+/* Partner-testimonial card — same shape as a community review but with a
+   thin tinted border so the editorial source is visually distinguishable.
+   The "Partner" tag in the meta row makes the distinction explicit. */
+.rp-review-partner {
+  /* Same glass treatment, plus a thin purple ring + halo so the partner
+     card reads as editorial, not community. Layered shadows preserve the
+     glass highlight from `.rp-review`. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 1px rgba(80, 57, 224, 0.28),
+    0 12px 32px -16px rgba(80, 57, 224, 0.32);
+}
+:where(html,body)[data-theme="dark"] .rp-review-partner {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(141, 124, 255, 0.4),
+    0 12px 32px -16px rgba(80, 57, 224, 0.5);
+}
+.rp-tag {
+  flex: 0 0 auto;
+  font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 999px;
+}
+.rp-tag-partner {
+  background: rgba(80, 57, 224, 0.14);
+  color: #4838c5;
+}
+:where(html,body)[data-theme="dark"] .rp-tag-partner {
+  background: rgba(141, 124, 255, 0.22);
+  color: #b9a4ff;
+}
+
+.rp-bands {
+  max-width: 1280px; margin: 0 auto 64px;
+  display: flex; flex-direction: column; gap: 32px;
+}
+.rp-band-lbl {
+  font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.rp-logos {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.rp-logo {
+  height: 56px; padding: 0 28px;
+  background: var(--paper); border-radius: 12px;
+  display: inline-flex; align-items: center;
+  font-size: 16px; font-weight: 600; letter-spacing: -0.005em;
+  color: var(--ink-2);
+  box-shadow: 0 0 0 1px var(--line-soft);
+}
+.rp-logo.press { font-style: italic; font-weight: 500; }
+
+/* Partner-logo carousel — infinite horizontal scroll, ported from the
+   legacy main-page partners ticker. Two copies of the list ride on a
+   `translateX(0 → -50%)` keyframe; at the loop boundary the duplicate
+   sits exactly where the original was, so the wrap is invisible. The
+   `mask-image` linear-gradient softens both edges so logos appear from a
+   fade and flow back into one. */
+.prn-carousel {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%);
+          mask-image:
+    linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+.prn-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  animation: prn-scroll 50s linear infinite;
+}
+.prn-carousel:hover .prn-track,
+.prn-carousel:focus-within .prn-track {
+  animation-play-state: paused;
+}
+.prn-item {
+  flex: 0 0 auto;
+  /* Gap as margin-right so it counts as part of the item width — keeps
+     the duplicate offset perfectly aligned with the original at -50%. */
+  margin-right: 56px;
+  display: inline-flex; align-items: center;
+  height: 42px;
+  outline: 0;
+}
+.prn-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.prn-logo {
+  display: block;
+  height: 28px; width: auto;
+  opacity: 0.75;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.prn-item:hover .prn-logo {
+  opacity: 1;
+  transform: scale(1.04);
+}
+.prn-logo-dark { display: none; }
+:where(html,body)[data-theme="dark"] .prn-logo-light { display: none; }
+:where(html,body)[data-theme="dark"] .prn-logo-dark { display: block; }
+@keyframes prn-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Honor system preference — stop the ticker for users who don't want
+     constant motion. The list still renders, just static. */
+  .prn-track { animation: none; }
+}
+
+.rp-cta {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 40px;
+  background: var(--paper);
+  border-radius: 24px;
+  box-shadow: 0 0 0 1px var(--line-soft);
+}
+.rp-cta-eyebrow {
+  font-size: 16px; color: var(--ink-3); margin-bottom: 6px;
+}
+.rp-cta-h {
+  font-size: 32px; font-weight: 600; letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* ═══ 05 — Account tiers (Pro light / VIP dark) ═══ */
+.tiers-section {
+  padding: 140px 40px;
+  border-top: 1px solid var(--line);
+}
+.tiers-head {
+  max-width: 1280px; margin: 0 auto 56px;
+}
+.tiers-head h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: var(--ink); max-width: 900px;
+}
+
+.tiers-grid {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.tier-card {
+  border-radius: 28px;
+  padding: 48px 44px 44px;
+  display: flex; flex-direction: column;
+  min-height: 480px;
+  position: relative;
+  overflow: hidden;
+}
+.tier-card.pro {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line-soft);
+}
+.tier-card.vip {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,210,140,0.18), transparent 50%),
+    radial-gradient(circle at 20% 100%, rgba(120,90,200,0.20), transparent 60%),
+    linear-gradient(160deg, #1B1A22 0%, #0E0E14 70%);
+  color: #fff;
+}
+.tier-tag {
+  display: inline-flex; align-self: flex-start;
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--paper-2); color: var(--ink-2);
+  margin-bottom: 24px;
+}
+.tier-card.vip .tier-tag {
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+}
+.tier-h {
+  font-size: 56px; font-weight: 700; letter-spacing: -0.03em; line-height: 0.98;
+  margin: 0 0 18px; color: inherit;
+}
+.tier-sub {
+  font-size: 18px; line-height: 1.5; margin: 0 0 32px;
+  max-width: 420px;
+  color: var(--ink-2);
+}
+.tier-card.vip .tier-sub { color: rgba(255,255,255,0.65); }
+
+.tier-list {
+  list-style: none; padding: 0; margin: 0 0 32px;
+  display: flex; flex-direction: column; gap: 14px;
+  flex: 1;
+}
+.tier-list li {
+  font-size: 16px; line-height: 1.4;
+  display: flex; align-items: flex-start; gap: 12px;
+  color: var(--ink);
+}
+.tier-card.vip .tier-list li { color: rgba(255,255,255,0.92); }
+.tier-list li::before {
+  content: "";
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--accent);
+  margin-top: 9px; flex-shrink: 0;
+}
+.tier-card.vip .tier-list li::before { background: #F5C04A; }
+
+.tier-cta {
+  align-self: flex-start;
+}
+
+/* ═══ 06 — Rates (dark terminal ticker) ═══ */
+.rates-section {
+  padding: 140px 0;
+  background: #0B0B10;
+  color: #fff;
+  border-top: 1px solid var(--line);
+}
+.rates-head {
+  max-width: 1280px; margin: 0 auto 56px;
+  padding: 0 40px;
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px;
+  align-items: end;
+}
+.rates-head .label { color: rgba(255,255,255,0.5); }
+.rates-head h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: #fff;
+}
+.rates-sub {
+  font-size: 18px; color: rgba(255,255,255,0.6); margin: 16px 0 0;
+  line-height: 1.5; max-width: 500px;
+}
+.rates-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  border-left: 1px solid rgba(255,255,255,0.10);
+  padding-left: 32px;
+}
+.rates-stats > div {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.rates-stats strong {
+  font-size: 28px; font-weight: 600; letter-spacing: -0.02em;
+  color: #fff; font-variant-numeric: tabular-nums;
+}
+.rates-stats span {
+  font-size: 16px; color: rgba(255,255,255,0.5);
+  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+}
+
+.rates-table {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0 40px;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.rates-row {
+  display: grid;
+  grid-template-columns: 240px 1fr 100px 200px 100px;
+  align-items: center; gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 16px;
+  transition: background 200ms;
+}
+.rates-row:not(.head):hover { background: rgba(255,255,255,0.02); }
+.rates-row.head {
+  font-size: 16px; color: rgba(255,255,255,0.4);
+  letter-spacing: 0.10em; text-transform: uppercase; font-weight: 600;
+  padding: 12px 0;
+  font-family: var(--chn-font-sans);
+}
+.rates-pair { display: flex; align-items: center; gap: 12px; }
+.rates-coin {
+  font-size: 16px; font-weight: 600; color: #fff;
+  letter-spacing: -0.005em;
+}
+.rates-arrow { color: rgba(255,255,255,0.35); }
+.rates-rate {
+  font-size: 16px; color: rgba(255,255,255,0.85);
+  font-variant-numeric: tabular-nums;
+}
+.rates-delta {
+  font-size: 16px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.rates-delta.up { color: #4ED9A0; }
+.rates-delta.dn { color: #FF7A5C; }
+.rates-delta::before {
+  content: ""; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+}
+.rates-delta.up::before { border-bottom: 5px solid #4ED9A0; }
+.rates-delta.dn::before { border-top: 5px solid #FF7A5C; }
+.rates-liq {
+  display: flex; align-items: center;
+}
+.rates-liq-bar {
+  height: 4px; width: 100%;
+  background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;
+  display: block;
+}
+.rates-liq-bar > span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #4ED9A0 0%, #6BE0AE 100%);
+  border-radius: 999px;
+}
+.rates-cta {
+  justify-self: end;
+  font-size: 16px; font-weight: 600;
+  color: #fff; text-decoration: none;
+  padding: 8px 16px; border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  transition: background 150ms;
+  font-family: var(--chn-font-sans);
+}
+.rates-cta:hover { background: rgba(255,255,255,0.16); }
+
+.rates-all {
+  max-width: 1280px; margin: 40px auto 0;
+  padding: 0 40px;
+  display: block;
+  font-size: 16px; font-weight: 600; color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.005em;
+}
+.rates-all:hover { color: var(--accent); }
+
+/* Live ticker pulse */
+.rates-pulse {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 16px; color: rgba(255,255,255,0.5);
+  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  margin-bottom: 8px;
+}
+.rates-pulse-dot {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: #4ED9A0;
+  box-shadow: 0 0 0 0 rgba(78,217,160,0.7);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(78,217,160,0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(78,217,160,0); }
+  100% { box-shadow: 0 0 0 0 rgba(78,217,160,0); }
+}
+
+/* ═══ 07 — Privacy & security ═══ */
+.ps-section {
+  padding: 140px 40px;
+  border-top: 1px solid var(--line);
+}
+.ps-head {
+  max-width: 1280px; margin: 0 auto 64px;
+}
+.ps-head h2 {
+  font-size: 72px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.0;
+  margin: 0; color: var(--ink); max-width: 1000px;
+}
+.ps-grid {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.ps-col {
+  background: var(--paper); border-radius: 22px;
+  padding: 36px 32px;
+  box-shadow: 0 0 0 1px var(--line-soft);
+  display: flex; flex-direction: column; gap: 0;
+  min-height: 320px;
+  position: relative;
+}
+.ps-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--paper-2);
+  display: grid; place-items: center;
+  color: var(--ink); margin-bottom: 28px;
+}
+.ps-h {
+  font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--ink);
+}
+.ps-sub {
+  font-size: 16px; line-height: 1.5; color: var(--ink-2);
+  margin: 0 0 24px; flex: 1;
+}
+.ps-tag {
+  align-self: flex-start;
+  font-size: 16px; font-weight: 600;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-hover);
+  letter-spacing: -0.005em;
+}
+:where(html,body)[data-theme="dark"] .ps-tag {
+  background: rgba(0,194,111,0.15); color: #4ED9A0;
+}
+
+/* ═══ 08 — Apps everywhere ═══ */
+.apps-section {
+  padding: 140px 40px;
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+}
+.apps-grid {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1.1fr; gap: 80px;
+  align-items: center;
+}
+.apps-l {
+  display: grid; place-items: center;
+}
+.apps-phone {
+  width: 320px; aspect-ratio: 320 / 640;
+  border-radius: 44px;
+  background: linear-gradient(160deg, #1B1A22 0%, #0E0E14 100%);
+  padding: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 30px 80px -20px rgba(15,15,20,0.35),
+    0 12px 24px -8px rgba(15,15,20,0.20);
+  position: relative;
+}
+.apps-phone-screen {
+  width: 100%; height: 100%; border-radius: 32px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(120,90,200,0.16), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(0,194,111,0.10), transparent 50%),
+    #14141A;
+  padding: 56px 24px 32px;
+  display: flex; flex-direction: column; gap: 24px;
+  color: #fff;
+}
+.apps-phone-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.apps-phone-bal {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+.apps-phone-pct {
+  font-size: 16px; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px;
+}
+.apps-phone-pct.up { color: #4ED9A0; background: rgba(78,217,160,0.14); }
+.apps-phone-chart {
+  height: 96px; border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(78,217,160,0.20) 0%, transparent 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 96' preserveAspectRatio='none'><polyline fill='none' stroke='%234ED9A0' stroke-width='2' points='0,70 30,60 60,65 90,40 120,50 150,30 180,42 210,20 240,28 280,12'/></svg>") center/100% 100% no-repeat;
+}
+.apps-phone-tiles {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.apps-phone-tiles > div {
+  aspect-ratio: 1; border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  display: grid; place-items: center;
+  font-size: 16px; font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.apps-r h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: var(--ink);
+}
+.apps-sub {
+  font-size: 18px; line-height: 1.5; color: var(--ink-2);
+  margin: 24px 0 40px; max-width: 480px;
+}
+.apps-list {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  max-width: 540px;
+}
+.apps-btn {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  background: var(--paper); border-radius: 16px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px var(--line-soft);
+  transition: transform 150ms, box-shadow 150ms;
+}
+.apps-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--line), 0 8px 20px -8px rgba(15,15,20,0.10);
+}
+.apps-btn-ic {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--paper-2);
+  display: grid; place-items: center;
+  font-size: 18px; color: var(--ink);
+  flex-shrink: 0;
+}
+.apps-btn-text { flex: 1; min-width: 0; }
+.apps-btn-name {
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.apps-btn-sub {
+  font-size: 16px; color: var(--ink-3); margin-top: 2px;
+}
+.apps-btn-arrow {
+  color: var(--ink-3); font-size: 16px; transition: transform 150ms;
+}
+.apps-btn:hover .apps-btn-arrow { transform: translateX(3px); color: var(--ink); }
+
+/* ═══ 09 — Global reach (dotted dark map) ═══ */
+.reach-section {
+  padding: 140px 0;
+  background: #0B0B10;
+  color: #fff;
+  border-top: 1px solid var(--line);
+}
+.reach-grid {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0 40px;
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 64px;
+  align-items: center;
+}
+/* Real dotted-worldmap (legacy SVG) on a dark stage. The map sits as a
+   background; an SVG overlay on top renders animated transaction markers
+   that fade in, hold, and fade out. */
+.reach-map {
+  aspect-ratio: 961 / 487;
+  position: relative;
+  background: linear-gradient(160deg, #14141A 0%, #0B0B10 100%);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
+}
+.reach-map-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  /* Tone the dots so the brand-color markers pop on top. */
+  opacity: 0.35;
+  filter: brightness(1.4) saturate(0.4);
+}
+.reach-map-overlay {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* One animated marker = pulse-ring + dot + label. CSS controls the fade;
+   the component just toggles `is-visible`. */
+.reach-marker { opacity: 0; transition: opacity 280ms ease-out; }
+.reach-marker.is-visible { opacity: 1; }
+
+.reach-marker-pulse {
+  fill: var(--accent);
+  opacity: 0.18;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: reach-pulse 1800ms ease-out infinite;
+}
+.reach-marker-dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 6px rgba(0, 194, 111, 0.7));
+}
+@keyframes reach-pulse {
+  0%   { transform: scale(0.6); opacity: 0.4; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reach-marker-pulse { animation: none; }
+}
+
+/* Marker label — two stacked rows, "Sent" green / "Got" graphite, mirroring
+   the legacy palette. Rendered as HTML inside foreignObject so wrapping
+   and font metrics are handled natively. */
+.reach-marker-label {
+  display: inline-flex; flex-direction: column; gap: 2px;
+  font-family: var(--chn-font-sans);
+  font-size: 16px; line-height: 1; font-weight: 500;
+  white-space: nowrap;
+}
+.reach-marker-row {
+  display: inline-flex; align-items: center;
+  padding: 4px 7px;
+  border-radius: 4px;
+  color: #fff;
+}
+.reach-marker-row strong {
+  font-weight: 700;
+  margin: 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.reach-marker-row-sent {
+  background: var(--accent);
+  align-self: flex-start;
+}
+.reach-marker-row-got {
+  background: #30303E;
+  align-self: flex-start;
+}
+
+.reach-r .label { color: rgba(255,255,255,0.5); }
+.reach-r h2 {
+  font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+  margin: 0; color: #fff;
+}
+.reach-stats {
+  margin-top: 40px;
+  display: flex; flex-direction: column; gap: 24px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  padding-top: 24px;
+}
+.reach-stat {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.reach-stat strong {
+  font-size: 28px; font-weight: 600; letter-spacing: -0.02em;
+  color: #fff; font-variant-numeric: tabular-nums;
+}
+.reach-stat span {
+  font-size: 16px; color: rgba(255,255,255,0.55);
+}
+
+/* ═══ 10 — NOW family bento ═══ */
+.family-section {
+  padding: 140px 40px;
+  border-top: 1px solid var(--line);
+}
+.family-head {
+  max-width: 1280px; margin: 0 auto 56px;
+}
+.family-head h2 {
+  font-size: 88px; font-weight: 700; letter-spacing: -0.035em; line-height: 0.96;
+  margin: 0; color: var(--ink);
+}
+.family-sub {
+  font-size: 18px; color: var(--ink-2); line-height: 1.5;
+  margin: 24px 0 0; max-width: 560px;
+}
+.family-grid {
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.family-card {
+  background: var(--paper); border-radius: 18px;
+  padding: 24px;
+  text-decoration: none;
+  display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 0 0 1px var(--line-soft);
+  transition: transform 150ms, box-shadow 150ms;
+  min-height: 168px;
+  position: relative;
+}
+.family-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 1px var(--line), 0 12px 24px -8px rgba(15,15,20,0.10);
+}
+.family-card-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--ink); color: var(--paper);
+  display: grid; place-items: center;
+  font-size: 16px; font-weight: 800; letter-spacing: -0.02em;
+}
+.family-card-text { flex: 1; }
+.family-card-name {
+  font-size: 18px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+.family-tag {
+  font-size: 16px; font-weight: 800; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+  background: var(--paper-2); color: var(--ink-2);
+}
+.family-card-sub {
+  font-size: 16px; color: var(--ink-3); line-height: 1.4;
+}
+.family-card-arrow {
+  position: absolute; top: 24px; right: 24px;
+  color: var(--ink-3); font-size: 16px; opacity: 0; transition: opacity 150ms, transform 150ms;
+}
+.family-card:hover .family-card-arrow { opacity: 1; transform: translateX(2px); color: var(--ink); }
+
+/* ═══ 11 — FAQ ═══ */
+.faq-section {
+  padding: 140px 40px;
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+}
+.faq-head {
+  max-width: 880px; margin: 0 auto 56px;
+}
+.faq-head h2 {
+  font-size: 72px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.0;
+  margin: 0; color: var(--ink);
+}
+.faq-list {
+  max-width: 880px; margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.faq-item {
+  border-bottom: 1px solid var(--line);
+}
+.faq-q {
+  width: 100%;
+  padding: 28px 0;
+  background: transparent; border: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: inherit;
+  font-size: 22px; font-weight: 500; letter-spacing: -0.015em;
+  color: var(--ink); text-align: left;
+  cursor: pointer;
+}
+.faq-q:hover { color: var(--ink-2); }
+.faq-toggle {
+  width: 32px; height: 32px; border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line-soft);
+  display: grid; place-items: center;
+  font-size: 18px; color: var(--ink-2); font-weight: 300;
+  flex-shrink: 0; margin-left: 24px;
+}
+.faq-item.open .faq-toggle {
+  background: var(--ink); color: var(--paper);
+  box-shadow: none;
+}
+.faq-a {
+  padding: 0 0 32px;
+  font-size: 18px; line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 720px;
+}
+.faq-foot {
+  max-width: 880px; margin: 48px auto 0;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 16px; color: var(--ink-2);
+}
+
+
+/* ─────────────── Header popovers (settings + apps) ─────────────── */
+.settings-menu,
+.apps-menu { position: relative; }
+
+.settings-pop,
+.apps-pop {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 280px;
+  background: var(--paper);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(15,15,20,0.12), inset 0 0 0 1px var(--line);
+  padding: 8px;
+  z-index: 60;
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.settings-h {
+  padding: 8px 12px 4px;
+  font-size: 16px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+.settings-row {
+  padding: 10px 12px; border-radius: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+}
+.settings-row-lbl {
+  font-size: 16px; color: var(--ink-2); font-weight: 500;
+}
+
+.settings-seg {
+  display: inline-flex; gap: 2px;
+  background: var(--paper-2); padding: 2px;
+  border-radius: 8px;
+}
+.settings-seg-wrap {
+  flex-wrap: wrap; max-width: 180px; justify-content: flex-end;
+}
+.settings-seg button {
+  border: 0; background: transparent;
+  padding: 5px 10px; border-radius: 6px;
+  font-family: inherit; font-size: 16px; font-weight: 600;
+  color: var(--ink-3); cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.settings-seg button[aria-selected="true"] {
+  background: var(--paper); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.settings-seg button:hover:not([aria-selected="true"]) { color: var(--ink-2); }
+
+/* Apps popover */
+.apps-pop { min-width: 300px; }
+.apps-pop-list { display: flex; flex-direction: column; gap: 2px; padding: 0 4px 4px; }
+.apps-pop-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 8px; border-radius: 10px;
+  text-decoration: none; color: var(--ink);
+  transition: background-color 120ms ease;
+}
+.apps-pop-row:hover { background: var(--paper-2); }
+.apps-pop-ic {
+  flex: 0 0 auto;
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--paper-2);
+  display: grid; place-items: center; font-size: 18px;
+}
+.apps-pop-text { flex: 1; min-width: 0; }
+.apps-pop-name { display: block; font-size: 16px; font-weight: 600; color: var(--ink); }
+.apps-pop-sub  { display: block; font-size: 16px; color: var(--ink-3); margin-top: 1px; }
+.apps-pop-arrow {
+  color: var(--ink-3); font-size: 16px; opacity: 0.7;
+  transition: transform 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+.apps-pop-row:hover .apps-pop-arrow { color: var(--ink); transform: translateX(2px); opacity: 1; }

@@ -1,0 +1,239 @@
+:root {
+  --page-bg: #f6f4f8;
+  --page-bg-secondary: #F3F3F3;
+  --pro-page-bg: #f6f4f8;
+  --element-primary-bg: #fff;
+  --element-secondary-bg: #F8F8F8;
+  --element-tertiary-bg: #fff;
+  --text-primary-color: #2B2B37;
+  --text-revert-primary-color: #fff;
+  --pro-text-sub-primary-color: #1B1B1E;
+  --text-secondary-color: #6A6A7F;
+  --text-sub-secondary-color: #89898B;
+  --text-tertiary-color: #AEB0BD;
+  --pro-element-primary-bg: #fff;
+  --pro-element-secondary-bg: #fff;
+  --pro-element-tertiary-bg: #F8F8F8;
+  --pro-text-secondary-color: #6A6A7F;
+  --pro-text-tertiary-color: #808086;
+  --element-border-color: #EAE8ED;
+  --pro-element-border-color: #EAE8ED;
+  --warning-field-bg: #F1F1F1;
+  --warning-field-text-color: #808086;
+  --warning-yellow-bg: #F9EDC0;
+  --warning-yellow-text-color: #6A6A7F;
+  --hints-skeleton-color: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(255, 255, 255, 0) 100%), #e0e0e0;
+  --tooltip-bg: #fff;
+  --button-hover-bg: #F8F8F8;
+  --button-active-bg: #F6F4F8;
+  --button-active-green-bg: rgba(0, 194, 111, 0.10);
+  --tx-id-bg: #E5E5E9;
+  --pro-status-badge-orange-bg: #FEF6EB;
+  --pro-status-badge-orange-text-color: #F6A82A;
+  --pro-status-badge-warning-icon-color: #DB1E2E;
+  --pro-status-badge-green-bg: #DDF1E8;
+  --pro-status-badge-green-text-color: #00C26F;
+  --pro-status-badge-dark-orange-bg: rgba(255, 107, 0, 0.10);
+  --pro-status-badge-dark-orange-text-color: #FF6B00;
+  --pro-status-badge-red-bg: rgba(244, 40, 65, 0.10);
+  --pro-status-badge-red-text-color: #F42841;
+  --pro-status-badge-purple-bg: #F9ECF8;
+  --pro-status-badge-purple-text-color: #BF39B2;
+  --pro-status-badge-blue-bg: rgba(7, 161, 213, 0.10);
+  --pro-status-badge-blue-text-color: #07A1D5;
+  --pro-status-badge-turquoise-bg: #E5ECEF;
+  --pro-status-badge-turquoise-text-color: #36AA9B;
+  --pro-status-badge-neutral-bg: #F6F6F7;
+  --pro-status-badge-neutral-text-color: #A4A3AA;
+  --pro-status-badge-failed-bg: #FDE9EB;
+  --pro-status-badge-failed-text-color: #DB1E2E;
+  --pro-red-cross-icon-color: #DF3131;
+  --disabled-lock-icon-fill: #D3D7DA;
+  --cards-secondary-bg: #F9F9FB;
+  --cards-primary-bg: #F1F2F4;
+  --icon-fill-main: #1B1B1E;
+  --icon-fill-second: #2B2B37;
+  --separator-color: #EAE8ED;
+  --border-stroke-grey: #EFEFF1;
+  --input-bg-color: #F6F6F8;
+  --input-search-bg-color: #FAFAFD;
+  --currency-selector-hover: #f7f7f9;
+  --skeleton-base-bg: linear-gradient(90deg, #e0e0e0 0%, #b0b0b0 50%, #e0e0e0 100%);
+  --skeleton-shimmer-bg: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
+  --input-border-hover: #1B1B1E;
+  --input-border-focus: #0098E0;
+  --input-border-error: #FEA53B;
+  --input-bg-error: #FEE4C4;
+  --scrollbar-bg-color: $colorScrollbarPrimary;
+  --blog-menu-link-active-bg: rgba(43,43,54,.1);
+  --input-bg-color-secondary: #F6F6F6;
+  --theme-switcher-track-bg: #F1F2F4;
+}
+
+:root[data-theme=dark] {
+  --page-bg: #343443;
+  --page-bg-secondary: #262628;
+  --pro-page-bg: #262628;
+  --element-primary-bg: #2B2B37;
+  --element-secondary-bg: #3B3B4A;
+  --element-tertiary-bg: #343443;
+  --pro-element-primary-bg: #1B1B1E;
+  --pro-element-secondary-bg: #262628;
+  --pro-element-tertiary-bg: #262628;
+  --text-primary-color: #fff;
+  --text-revert-primary-color: #2B2B37;
+  --text-secondary-color: #AEB0BD;
+  --text-sub-secondary-color: #AEB0BD;
+  --text-tertiary-color: #6A6A7F;
+  --pro-text-sub-primary-color: #FFFFFF;
+  --pro-text-secondary-color: #AEB0BD;
+  --pro-text-tertiary-color: #A4A3AA;
+  --element-border-color: #46475D;
+  --pro-element-border-color: #3B3C48;
+  --warning-field-bg: #3F3F4A;
+  --warning-field-text-color: #AEB0BD;
+  --warning-yellow-bg: #544F4A;
+  --warning-yellow-text-color: #fff;
+  --hints-skeleton-color: linear-gradient(90deg, #4E4E6A -43.75%, #2B2B37 22.19%, #4E4E6A 100%);
+  --tooltip-bg: #3D3D58;
+  --button-hover-bg: #46475D;
+  --button-active-bg: #3D3D58;
+  --button-active-green-bg: rgba(0, 194, 111, 0.10);
+  --tx-id-bg: #3D3D58;
+  --pro-status-badge-orange-bg: rgba(254, 165, 59, 0.30);
+  --pro-status-badge-orange-text-color: #FEA53B;
+  --pro-status-badge-warning-icon-color: #F6A82A;
+  --pro-status-badge-green-bg: rgba(0, 194, 111, 0.30);
+  --pro-status-badge-green-text-color: #00C26F;
+  --pro-status-badge-dark-orange-bg: rgba(255, 107, 0, 0.10);
+  --pro-status-badge-dark-orange-text-color: #FF6B00;
+  --pro-status-badge-red-bg: rgba(244, 40, 65, 0.10);
+  --pro-status-badge-red-text-color: #F42841;
+  --pro-status-badge-purple-bg: rgba(186, 77, 175, 0.30);
+  --pro-status-badge-purple-text-color: #F584E9;
+  --pro-status-badge-blue-bg: rgba(7, 161, 213, 0.30);
+  --pro-status-badge-blue-text-color: #29C7FD;
+  --pro-status-badge-turquoise-bg: rgba(97, 182, 166, 0.30);
+  --pro-status-badge-turquoise-text-color: #7AD3C2;
+  --pro-status-badge-neutral-bg: #323236;
+  --pro-status-badge-neutral-text-color: #AEB0BD;
+  --pro-status-badge-failed-bg: #323236;
+  --pro-status-badge-failed-text-color: #AEB0BD;
+  --pro-red-cross-icon-color: #FE5959;
+  --disabled-lock-icon-fill: #6A6A7F;
+  --cards-secondary-bg: #2C2C2E;
+  --cards-primary-bg: #1B1B1E;
+  --icon-fill-main: #FFFFFF;
+  --icon-fill-second: #FFFFFF;
+  --separator-color: #3B3C48;
+  --border-stroke-grey: #3B3C48;
+  --input-bg-color: #2C2C2E;
+  --input-search-bg-color: #2C2C2E;
+  --currency-selector-hover: #262628;
+  --skeleton-base-bg: linear-gradient(90deg, #3B3B4A 0%, #46475D 50%, #3B3B4A 100%);
+  --skeleton-shimmer-bg: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0) 100%);
+  --input-border-hover: #FFFFFF;
+  --input-border-focus: #0098E0;
+  --input-border-error: #FEA53B;
+  --input-bg-error: #5F4527;
+  --scrollbar-bg-color: #262629;
+  --input-bg-color-secondary: #2C2C2E;
+  --blog-menu-link-active-bg: #3D3D58;
+  --theme-switcher-track-bg: #343443;
+}
+
+.wide-language-dropdown__wrapper {
+  position: relative;
+  height: 44px;
+}
+
+.wide-language-dropdown__dropdown {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  background-color: #343443;
+  border-radius: 8px;
+  max-width: 228px;
+  width: 228px;
+}
+
+.wide-language-dropdown__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wide-language-dropdown__text {
+  color: #FFFFFF;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.wide-language-dropdown__menu-wrapper {
+  position: absolute;
+  z-index: 999;
+  padding-bottom: 12px;
+  bottom: 48px;
+  background-color: transparent;
+}
+
+.wide-language-dropdown__menu {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  border: 1px solid #3B3C48;
+  background-color: #262628;
+  max-width: 228px;
+  width: 228px;
+  padding: 8px 0;
+  margin: 0;
+}
+
+.wide-language-dropdown__menu-item {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+}
+
+.wide-language-dropdown__menu-item-link {
+  display: flex;
+  flex-direction: row;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #FFFFFF;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wide-language-dropdown__menu-item-link:hover {
+  background-color: #1B1B1E;
+  color: #FFFFFF;
+}
+
+.wide-language-dropdown__-icon {
+  transition: transform 0.3s ease;
+}
+
+.wide-language-dropdown__icon_active {
+  transform: rotate(180deg);
+}
+
+@media screen and (min-width: 992px) {
+  .wide-language-dropdown__ {
+    width: 228px;
+  }
+  .wide-language-dropdown__menu-wrapper {
+    bottom: 0;
+    padding-bottom: 20px;
+  }
+}

@@ -33,9 +33,16 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# private npm auth — keep tokens out of git
+.npmrc
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# planning docs and legacy reference sources — local-only
+/docs
+/legacy-projects

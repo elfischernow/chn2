@@ -1,0 +1,159 @@
+/* Shared dropdown panel + column styles used by HeadphonesDropdown,
+ * AppsDropdown, and SettingsDropdown. Lifted from the blog's
+ * NavWithMore.module.css so the visual contract matches one-for-one. */
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 50%;
+  /* `useLayoutEffect` in Header overwrites `--dropdown-shift` to keep the
+   * panel inside the viewport. */
+  transform: translateX(calc(-50% + var(--dropdown-shift, 0px)));
+  max-width: calc(100vw - 32px);
+  z-index: 200;
+  min-width: 190px;
+  background: var(--dropdown-bg);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--dropdown-border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: var(--dropdown-shadow);
+}
+
+/* Browsers without backdrop-filter (or with it disabled) get the solid
+ * surface so the panel never reads as washed-out over busy hero content. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dropdown {
+    background: var(--dropdown-bg-solid);
+  }
+}
+
+.dropLink {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  font-size: var(--Typography-Size-m);
+  line-height: var(--Typography-Line-height-s);
+  color: var(--Text-colors-Text-Primary);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+  width: 100%;
+}
+
+.dropLink:hover {
+  background: var(--dropdown-hover-bg);
+}
+
+.columnTitle {
+  color: var(--Text-colors-Text-Secondary);
+  font-size: var(--Typography-Size-m);
+  line-height: var(--Typography-Line-height-s);
+  padding: 0 8px;
+  margin-bottom: 12px;
+  font-weight: 400;
+}
+
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+  padding: 16px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.columnsDropdown {
+  top: calc(100% + 8px);
+}
+
+.columnsDropdown::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: transparent;
+}
+
+.linkLabel {
+  display: block;
+}
+
+.linkDescription {
+  color: var(--Text-colors-Text-Secondary);
+}
+
+.appsWrapper {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.mobileApps {
+  display: flex;
+  flex-direction: column-reverse;
+  margin: 16px;
+  background-image: url("/images/header/mobile-apps-bg.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 460px auto;
+  width: 271px;
+  height: 320px;
+  border-radius: 8px;
+}
+
+.mobileAppsContent {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 0 0 8px 8px;
+}
+
+.mobileAppsTitle {
+  color: #fff;
+  font-size: var(--Typography-Size-l);
+  line-height: var(--Typography-Line-height-s);
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.buttonsGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+.mobileAppsButton {
+  display: flex;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  background-color: var(--BG-Secondary);
+  border-radius: 4px;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.mobileAppsButton:hover,
+.mobileAppsButton_active {
+  background-color: var(--color-header-button-hover);
+}
