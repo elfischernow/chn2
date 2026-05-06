@@ -1,7 +1,11 @@
-// Client-side DAL for auth flows. Goes through `/api/auth/*` proxy so that
-// session cookies are first-party. Mirrors legacy
-// `react-ssr/api/modules/dashboard/use-dashboard-*.js` 1:1, including the
-// unified return shape (legacy `restRequestWrapper.js`):
+// Client-side DAL for auth flows. Talks directly to vip-api — no Next proxy
+// in the way. Cross-origin cookies work because production deploys serve the
+// app on the same eTLD+1 as vip-api (the upstream sets `SameSite=None` /
+// `Domain=.<root>` so the browser treats them as first-party); local/preview
+// dev maps a sibling host in /etc/hosts so the same rule applies.
+//
+// Mirrors legacy `react-ssr/api/modules/dashboard/use-dashboard-*.js` 1:1,
+// including the unified return shape (legacy `restRequestWrapper.js`):
 //
 //   { status, statusText, isError, data: <body> | { errorData, status } }
 //
@@ -14,7 +18,9 @@
 // Anything that needs different semantics (e.g. retry, dedupe) layers on top
 // of these primitives — they stay dumb and predictable.
 
-const API_BASE = '/api/auth';
+import { VIP_API_BASE } from '../config';
+
+const API_BASE = VIP_API_BASE;
 
 export interface DalResult<T = unknown> {
   status: number;
@@ -70,9 +76,12 @@ const request = async <T = unknown>(
       method,
       headers: finalHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
-      // Same-origin proxy → same-origin cookies. `credentials: 'same-origin'`
-      // is the fetch default for relative URLs but spelled out for clarity.
-      credentials: 'same-origin',
+      // Cross-origin → must be `'include'` so the upstream's session cookie
+      // tags along (and any `Set-Cookie` from the response is persisted by
+      // the browser). The upstream is required to send `SameSite=None;
+      // Secure` and the right `Access-Control-Allow-Credentials: true`
+      // header for this to land — see the deploy notes.
+      credentials: 'include',
       signal,
       cache: 'no-store',
     });

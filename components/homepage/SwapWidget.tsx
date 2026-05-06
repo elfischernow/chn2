@@ -7,6 +7,7 @@ import { useSession } from '@/lib/auth/useSession';
 import {
   buildExchangeUrl,
   buildPrivateTransferUrl,
+  createTransaction,
   type EstimateResponse,
   type EstimateType,
   type RateFlow,
@@ -34,7 +35,6 @@ import {
   DECIMAL_RE,
   formatDefaultSeed,
 } from './calculator/shared/utils';
-import { LongPressButton } from './calculator/shared/LongPressButton';
 import { FiatProviderStrip } from './FiatProviderStrip';
 import { useExchangeEstimate } from './useExchangeEstimate';
 
@@ -161,10 +161,10 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   // widget level so the URL-hash sync can roundtrip it the same way it
   // does the address.
   const [recipientExtraId, setRecipientExtraId] = useState<string>('');
-  // Submission state for the private-transfer Send button. The CTA POSTs
-  // to our `/api/transactions` proxy (which forwards to vip-api), then
-  // redirects to the legacy transaction page on success. `null` →
-  // idle; `'sending'` → in flight; `string` → error message to surface.
+  // Submission state for the private-transfer Send button. The CTA calls
+  // `createTransaction` (POSTs directly to vip-api), then redirects to the
+  // legacy transaction page on success. `'idle'` while the user is editing,
+  // `'sending'` while in flight, error string when the upstream rejected.
   const [privateSubmit, setPrivateSubmit] = useState<'idle' | 'sending' | string>('idle');
   const [authSubmit, setAuthSubmit] = useState<'idle' | 'sending' | string>('idle');
 
@@ -570,8 +570,9 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
     return formatAmount(recommended.estimatedAmount);
   })();
 
-  const exchangeHref = isPrivate
-    ? buildPrivateTransferUrl({
+  const exchangeHref = (() => {
+    if (isPrivate) {
+      return buildPrivateTransferUrl({
         ticker: from,
         network: fromNetwork,
         // Forward whichever side the user actually typed — direction
@@ -586,21 +587,36 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         // actually needs one — otherwise the legacy page would surface a
         // recipient-extra-id field that doesn't apply.
         extraId: toCurrency?.hasExternalId ? recipientExtraId.trim() || undefined : undefined,
-      })
-    : buildExchangeUrl({
-        from,
-        to,
-        // Pass the user's *driver* amount in its native direction so the
-        // legacy page boots with the same field they were editing here.
-        // `direction` === 'reverse' surfaces as `&amountTo=…` (which the
-        // legacy SPA also auto-promotes to fixed-rate — see
-        // `legacy_exchange_routing.md`).
-        amount: direction === 'direct' ? fromAmount : undefined,
-        toAmount: direction === 'reverse' ? toAmount : undefined,
-        flow,
-        fiatMode: isFiatMode,
-        proMode: isConvert,
       });
+    }
+    if (isConvert) {
+      // Convert routes by auth state (per product direction): unauth users
+      // sign up, authed users land on /pro/exchange. We never run the
+      // Pro spot/limit/market calculator inline — that's a separate app.
+      if (!isLoggedIn) return '/registration';
+      const qs = new URLSearchParams({ from: from.toLowerCase(), to: to.toLowerCase() });
+      if (direction === 'reverse' && toAmount) qs.set('amountTo', toAmount);
+      else if (fromAmount) qs.set('amount', fromAmount);
+      if (flow === 'fixed-rate') qs.set('rateMode', 'fixed');
+      return `${SITE_URL}/pro/exchange?${qs.toString()}`;
+    }
+    return buildExchangeUrl({
+      from,
+      to,
+      // Pass the user's *driver* amount in its native direction so the
+      // landing page boots with the same field they were editing here.
+      // `direction === 'reverse'` surfaces as `&amountTo=…` (the new
+      // /exchange and the legacy SPA both auto-promote that to
+      // fixed-rate — see `legacy_exchange_routing.md`).
+      amount: direction === 'direct' ? fromAmount : undefined,
+      toAmount: direction === 'reverse' ? toAmount : undefined,
+      flow,
+      fiatMode: isFiatMode,
+      // No proMode here — Convert is handled above with explicit auth
+      // routing. Defaults to relative `/exchange?…` so we land on our own
+      // page instead of the legacy SPA.
+    });
+  })();
 
   const ctaLabel = isFiatMode
     ? fiatDir === 'buy'
@@ -653,41 +669,35 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
     }
     setPrivateSubmit('sending');
     try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromCurrency: from.toLowerCase(),
-          toCurrency: to.toLowerCase(),
-          fromNetwork,
-          toNetwork,
-          flow: 'fixed-rate',
-          // Direction echoes the side the user typed; the upstream uses
-          // it together with `rateId` to settle the opposite side at the
-          // quoted rate. Driver amount = whichever side they typed —
-          // the upstream returns the counterpart in its response.
-          type: direction,
-          rateId,
-          ...(direction === 'direct'
-            ? { fromAmount: Number(fromAmount) }
-            : { toAmount: Number(toAmount) }),
-          address: recipientAddress.trim(),
-          extraId:
-            toCurrency?.hasExternalId && recipientExtraId.trim()
-              ? recipientExtraId.trim()
-              : undefined,
-        }),
+      const tx = await createTransaction({
+        fromCurrency: from,
+        toCurrency: to,
+        fromNetwork,
+        toNetwork,
+        flow: 'fixed-rate',
+        // Direction echoes the side the user typed; the upstream uses
+        // it together with `rateId` to settle the opposite side at the
+        // quoted rate. Driver amount = whichever side they typed —
+        // the upstream returns the counterpart in its response.
+        type: direction,
+        rateId,
+        ...(direction === 'direct'
+          ? { fromAmount: Number(fromAmount) }
+          : { toAmount: Number(toAmount) }),
+        address: recipientAddress.trim(),
+        extraId:
+          toCurrency?.hasExternalId && recipientExtraId.trim()
+            ? recipientExtraId.trim()
+            : undefined,
+        source: 'private-transfers',
       });
-      const data = (await res.json().catch(() => null)) as
-        | { id?: string; error?: string; message?: string }
-        | null;
-      if (!res.ok || !data?.id) {
-        setPrivateSubmit(data?.message || 'Transaction failed. Try again.');
-        return;
-      }
-      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(data.id)}`;
-    } catch {
-      setPrivateSubmit('Network error. Try again.');
+      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
+    } catch (err) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Transaction failed. Try again.';
+      setPrivateSubmit(msg);
     }
   };
 
@@ -700,35 +710,28 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
     }
     setAuthSubmit('sending');
     try {
-      const payload: Record<string, unknown> = {
-        fromCurrency: from.toLowerCase(),
-        toCurrency: to.toLowerCase(),
+      const tx = await createTransaction({
+        fromCurrency: from,
+        toCurrency: to,
         fromNetwork,
         toNetwork,
         flow,
         type: direction,
-      };
-      if (rateId) payload.rateId = rateId;
-      if (direction === 'direct') payload.fromAmount = fromAmount;
-      else payload.toAmount = toAmount;
-      if (isFiatMode) payload.source = 'fiat';
-
-      const res = await fetch('/api/auth/v1.1/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
+        rateId: rateId || undefined,
+        address: '',
+        ...(direction === 'direct'
+          ? { fromAmount: Number(fromAmount) }
+          : { toAmount: Number(toAmount) }),
+        source: isFiatMode ? 'fiat' : 'site',
+        authenticated: true,
       });
-      const data = (await res.json().catch(() => null)) as
-        | { id?: string; message?: string }
-        | null;
-      if (!res.ok || !data?.id) {
-        setAuthSubmit(data?.message || 'Transaction failed. Try again.');
-        return;
-      }
-      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(data.id)}`;
-    } catch {
-      setAuthSubmit('Network error. Try again.');
+      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
+    } catch (err) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : 'Transaction failed. Try again.';
+      setAuthSubmit(msg);
     }
   }, [isLoggedIn, authSubmit, estimate, flow, from, to, fromNetwork, toNetwork, direction, fromAmount, toAmount, isFiatMode]);
 
@@ -743,7 +746,6 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
       setPrivateSubmit('idle');
     }
     if (authSubmit !== 'idle' && authSubmit !== 'sending') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthSubmit('idle');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1129,47 +1131,38 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         );
       })()}
 
-      {isConvert && isLoggedIn ? (
-        <LongPressButton
-          onComplete={onAuthCreateTransaction}
-          disabled={authSubmit === 'sending'}
-          busy={authSubmit === 'sending'}
-        >
-          {convMode === 'limit' ? 'Hold to place limit order' : 'Hold to convert'}
-        </LongPressButton>
-      ) : (
-        <a
-          className="swap-cta"
-          href={
-            !isLoggedIn && (isFiatMode || isConvert)
-              ? '/registration'
-              : exchangeHref
-          }
-          onClick={
-            isPrivate
-              ? onPrivateSendClick
-              : isLoggedIn && (isFiatMode || isConvert)
-                ? (e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.preventDefault();
-                    onAuthCreateTransaction();
-                  }
-                : undefined
-          }
-          data-busy={(privateSubmit === 'sending' || authSubmit === 'sending') || undefined}
-          data-disabled={
-            (isPrivate && (!privateAddressValid || privateSubmit === 'sending')) ||
-            (isLoggedIn && (isFiatMode || isConvert) && authSubmit === 'sending') ||
-            undefined
-          }
-          aria-disabled={
-            (isPrivate && (!privateAddressValid || privateSubmit === 'sending')) ||
-            (isLoggedIn && (isFiatMode || isConvert) && authSubmit === 'sending') ||
-            undefined
-          }
-        >
-          {ctaLabel}
-        </a>
-      )}
+      <a
+        className="swap-cta"
+        href={
+          // Buy/Sell unauth: /registration. Convert routing already lives
+          // in `exchangeHref` (sign-up unauth, /pro/exchange auth) — no
+          // extra branch here.
+          !isLoggedIn && isFiatMode ? '/registration' : exchangeHref
+        }
+        onClick={
+          isPrivate
+            ? onPrivateSendClick
+            : isLoggedIn && isFiatMode
+              ? (e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.preventDefault();
+                  onAuthCreateTransaction();
+                }
+              : undefined
+        }
+        data-busy={(privateSubmit === 'sending' || authSubmit === 'sending') || undefined}
+        data-disabled={
+          (isPrivate && (!privateAddressValid || privateSubmit === 'sending')) ||
+          (isLoggedIn && isFiatMode && authSubmit === 'sending') ||
+          undefined
+        }
+        aria-disabled={
+          (isPrivate && (!privateAddressValid || privateSubmit === 'sending')) ||
+          (isLoggedIn && isFiatMode && authSubmit === 'sending') ||
+          undefined
+        }
+      >
+        {ctaLabel}
+      </a>
       {isPrivate && privateSubmit !== 'idle' && privateSubmit !== 'sending' && (
         <span className="swap-cta-error" role="alert">
           {privateSubmit}

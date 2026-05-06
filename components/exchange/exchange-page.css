@@ -1,0 +1,655 @@
+/*
+ * /exchange page styles. Inherits the calculator's existing primitive
+ * classes (.swap-field, .swap-from-slot, .swap-amount, etc.) from
+ * `app/globals.css` and defines its own ex-* shell + form/modal/tips
+ * styles around them.
+ *
+ * Single-column ~520px form on desktop; full-width on mobile. Theme-aware
+ * via `data-theme` selectors that match the rest of the app.
+ */
+
+.ex-page {
+  --ex-card-bg: #fff;
+  --ex-card-bd: rgba(15, 15, 20, 0.08);
+  --ex-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 0 0 1px rgba(15, 15, 20, 0.06),
+    0 24px 60px -20px rgba(15, 15, 20, 0.12),
+    0 8px 24px -8px rgba(15, 15, 20, 0.06);
+  --ex-input-bg: rgba(246, 244, 248, 0.7);
+  --ex-input-bd: rgba(15, 15, 20, 0.06);
+  --ex-input-bd-focus: rgba(15, 15, 20, 0.18);
+  --ex-cta-bg: linear-gradient(180deg, #00c26f 0%, #00a85f 100%);
+  --ex-cta-fg: #fff;
+  --ex-cta-disabled-bg: rgba(15, 15, 20, 0.08);
+  --ex-cta-disabled-fg: rgba(15, 15, 20, 0.4);
+  --ex-error: #d54848;
+
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px 64px;
+  width: 100%;
+}
+
+:where(html, body)[data-theme='dark'] .ex-page {
+  --ex-card-bg: rgba(31, 31, 41, 0.6);
+  --ex-card-bd: rgba(255, 255, 255, 0.08);
+  --ex-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  --ex-input-bg: rgba(255, 255, 255, 0.04);
+  --ex-input-bd: rgba(255, 255, 255, 0.08);
+  --ex-input-bd-focus: rgba(255, 255, 255, 0.2);
+  --ex-cta-disabled-bg: rgba(255, 255, 255, 0.08);
+  --ex-cta-disabled-fg: rgba(255, 255, 255, 0.3);
+}
+
+.ex-shell {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ex-title {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Card ─── */
+.ex-card {
+  background: var(--ex-card-bg);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  border-radius: 28px;
+  box-shadow: var(--ex-card-shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+/* ─── Tabs ─── */
+.ex-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(246, 244, 248, 0.6);
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  position: relative;
+  z-index: 5;
+}
+
+:where(html, body)[data-theme='dark'] .ex-tabs {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ex-tab {
+  flex: 1;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-3, #9694a4);
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 150ms;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ex-tab[data-active] {
+  background: var(--paper, #fff);
+  color: var(--ink, #1a1a25);
+  box-shadow: 0 1px 3px rgba(15, 15, 20, 0.06), 0 0 0 1px rgba(15, 15, 20, 0.04);
+}
+
+.ex-tab-more {
+  flex: 0 0 auto;
+  padding: 0 14px;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-more {
+  position: relative;
+  display: flex;
+}
+
+.ex-more-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--ex-card-bg);
+  border: 1px solid var(--ex-card-bd);
+  border-radius: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-width: 200px;
+  box-shadow: 0 12px 30px -10px rgba(15, 15, 20, 0.18);
+  z-index: 10;
+}
+
+.ex-more-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 120ms;
+}
+
+.ex-more-item:hover {
+  background: rgba(15, 15, 20, 0.04);
+}
+
+:where(html, body)[data-theme='dark'] .ex-more-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Buy/Sell direction toggle ─── */
+.ex-fiat-dir {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(246, 244, 248, 0.6);
+  border-radius: 12px;
+}
+
+:where(html, body)[data-theme='dark'] .ex-fiat-dir {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ex-fiat-dir-btn {
+  flex: 1;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3, #9694a4);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 150ms;
+}
+
+.ex-fiat-dir-btn[data-active] {
+  background: var(--paper, #fff);
+  color: var(--ink, #1a1a25);
+  box-shadow: 0 1px 3px rgba(15, 15, 20, 0.06);
+}
+
+/* ─── Rate row (Floating / Fixed) ─── */
+.ex-rate-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 4px 0;
+}
+
+.ex-rate-toggle {
+  border: 1px solid var(--ex-input-bd);
+  background: transparent;
+  color: var(--ink-2, #635f7a);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+
+.ex-rate-toggle[data-active] {
+  background: var(--ink, #1a1a25);
+  color: #fff;
+  border-color: var(--ink, #1a1a25);
+}
+
+/* ─── Form fields ─── */
+.ex-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.ex-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ex-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2, #635f7a);
+  letter-spacing: 0.01em;
+}
+
+.ex-field-req {
+  color: var(--ink-3, #9694a4);
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.ex-field-input {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink, #1a1a25);
+  background: var(--ex-input-bg);
+  border: 1px solid var(--ex-input-bd);
+  border-radius: 14px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 120ms, background 120ms;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ex-field-input::placeholder {
+  color: var(--ink-3, #9694a4);
+}
+
+.ex-field-input:focus {
+  border-color: var(--ex-input-bd-focus);
+}
+
+.ex-field[data-has-error] .ex-field-input {
+  border-color: var(--ex-error);
+}
+
+.ex-field-error {
+  font-size: 12px;
+  color: var(--ex-error);
+}
+
+/* ─── Advanced (refund + promo, collapsible) ─── */
+.ex-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ex-advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2, #635f7a);
+  cursor: pointer;
+  padding: 4px 0;
+  align-self: flex-start;
+}
+
+.ex-advanced-toggle:hover:not(:disabled) {
+  color: var(--ink, #1a1a25);
+}
+
+.ex-advanced-toggle:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.ex-advanced-caret {
+  font-size: 11px;
+}
+
+.ex-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── ToS ─── */
+.ex-tos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.ex-tos-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-tos-cb {
+  flex: 0 0 16px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #00c26f;
+}
+
+.ex-tos-text a {
+  color: var(--ink, #1a1a25);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ─── CTA ─── */
+.ex-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ex-cta-bg);
+  color: var(--ex-cta-fg);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 120ms, transform 80ms;
+  box-shadow: 0 6px 18px -8px rgba(0, 194, 111, 0.45);
+}
+
+.ex-cta:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.ex-cta:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.ex-cta:disabled {
+  background: var(--ex-cta-disabled-bg);
+  color: var(--ex-cta-disabled-fg);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ex-cta-secondary {
+  background: var(--ink, #1a1a25);
+  color: #fff;
+  box-shadow: none;
+}
+
+.ex-cta-error {
+  font-size: 13px;
+  color: var(--ex-error);
+  margin: 0;
+}
+
+/* ─── Cashback button (matches the homepage's "save $X with Pro") ─── */
+.ex-cashback {
+  display: inline-flex;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink, #1a1a25);
+  text-decoration: none;
+  background: linear-gradient(120deg, rgba(154, 121, 255, 0.12), rgba(0, 194, 111, 0.12));
+  border: 1px solid rgba(154, 121, 255, 0.18);
+  transition: opacity 120ms;
+}
+
+.ex-cashback:hover {
+  opacity: 0.92;
+}
+
+.ex-cashback-amt {
+  color: #00a85f;
+  font-weight: 700;
+}
+
+/* ─── Deep-link panel (Convert / Loans / Bridge / Private) ─── */
+.ex-deeplink {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 16px;
+  text-align: center;
+  background: rgba(154, 121, 255, 0.06);
+  border-radius: 18px;
+  border: 1px dashed rgba(154, 121, 255, 0.3);
+}
+
+.ex-deeplink-msg {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-deeplink .ex-cta {
+  align-self: center;
+  padding: 0 28px;
+  height: 44px;
+  font-size: 15px;
+}
+
+/* ─── Modal ─── */
+.ex-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.ex-modal {
+  background: var(--ex-card-bg);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 24px 60px -20px rgba(15, 15, 20, 0.5);
+}
+
+.ex-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ex-modal-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ex-modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  border: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.ex-modal-btn:hover {
+  opacity: 0.9;
+}
+
+.ex-modal-btn-primary {
+  background: var(--ink, #1a1a25);
+  color: #fff;
+}
+
+.ex-modal-btn-secondary {
+  background: rgba(15, 15, 20, 0.06);
+  color: var(--ink, #1a1a25);
+}
+
+:where(html, body)[data-theme='dark'] .ex-modal-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Useful tips ─── */
+.ex-tips {
+  background: var(--ex-card-bg);
+  border-radius: 20px;
+  border: 1px solid var(--ex-card-bd);
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ex-tips-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 8px 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ex-tips-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ex-tips-caret {
+  color: var(--ink-3, #9694a4);
+  font-size: 12px;
+}
+
+.ex-tips-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 12px 0 4px;
+}
+
+.ex-tips-disclaimer {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+  background: rgba(154, 121, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.ex-tips-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ex-tips-block-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ex-tips-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ex-tips-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ex-tips-item-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-tips-item-text a {
+  color: var(--ink, #1a1a25);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.ex-tip-icon {
+  flex: 0 0 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  position: relative;
+}
+
+.ex-tip-icon-ok { color: #00c26f; }
+.ex-tip-icon-no { color: #d54848; }
+.ex-tip-icon-info { color: #9a79ff; }
+
+/* Inset checkmark/x/info dot — keeps the icon shapes simple while still
+   giving a meaningful visual rhythm to the lists. */
+.ex-tip-icon::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.ex-tips-block-footer {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2, #635f7a);
+}
+
+.ex-tips-block-footer a {
+  color: var(--ink, #1a1a25);
+  font-weight: 600;
+  text-decoration: underline;
+}

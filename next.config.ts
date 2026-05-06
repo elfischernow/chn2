@@ -154,8 +154,10 @@ const nextConfig: NextConfig = {
 //     `'unsafe-inline'` for both it and the framework's inline payload.
 //     The trade is intentional: tightening this further requires either
 //     experimental SRI (Next 14+) or moving to per-request nonces.
-//   - Connect-src is `'self'`: every upstream call goes through our own
-//     `/api/*` proxy, so the browser never needs cross-origin XHR.
+//   - Connect-src adds the vip-api and content-api hosts: the calculator
+//     calls these directly from the browser (no Next proxy in front), so
+//     the CSP needs to allow the cross-origin XHR. Hosts are sourced from
+//     env so dev/preview/prod can each point at their own upstream.
 //   - Img-src includes the two ChangeNOW asset hosts the app actually pulls
 //     from (currency icons + brand assets).
 function buildCsp(): string {
@@ -167,10 +169,25 @@ function buildCsp(): string {
   const contentHost = (() => {
     try {
       return new URL(
-        process.env.CONTENT_API_BASEURL ?? 'https://content-api.changenow.io',
+        process.env.NEXT_PUBLIC_CONTENT_API_BASE ??
+          process.env.CONTENT_API_BASEURL ??
+          'https://content-api.changenow.io',
       ).origin;
     } catch {
       return 'https://content-api.changenow.io';
+    }
+  })();
+  // The vip-api is the upstream for the calculator's `/v1.3/exchange/estimate`,
+  // `/v1/cashback/estimate`, `/v1.1/transactions`, and the auth flows.
+  // Same fallback chain — defaults to the bento.capital host the legacy
+  // SPA uses when nothing is set.
+  const vipApiHost = (() => {
+    try {
+      return new URL(
+        process.env.NEXT_PUBLIC_VIP_API_BASE ?? 'https://vip-api.bento.capital',
+      ).origin;
+    } catch {
+      return 'https://vip-api.bento.capital';
     }
   })();
 
@@ -210,6 +227,12 @@ function buildCsp(): string {
       "'self'",
       // HMR websocket in dev only — production stays origin-locked.
       ...(isDev ? ['ws:', 'wss:'] : []),
+      // Direct upstream calls: the calculator and auth flows talk to
+      // vip-api without a Next proxy in front.
+      vipApiHost,
+      // The cashback upsell's NOW→USD price lookup hits content-api
+      // directly from the browser.
+      contentHost,
       // TradingView widget pulls market data through its own websockets.
       'https://www.tradingview.com',
       'wss://data.tradingview.com',

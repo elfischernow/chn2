@@ -89,25 +89,32 @@ export function FiatProviderStrip({
   const containerRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
 
-  // Recommended is hard-pinned to Guardarian on the homepage strip — the
-  // upstream's `estimationFrom` rotates through the cheapest provider per
-  // pair, but the marketing surface promotes the platform's primary on-ramp
-  // partner consistently. If Guardarian isn't quoted for this pair, fall
-  // back to the first quoted provider.
-  const guardarianFromUpstream = providers.find(
-    (p) => p.type === FORCED_RECOMMENDED_PROVIDER,
-  );
-  const recommended = guardarianFromUpstream ?? providers[0] ?? null;
+  // "Recommended" is hard-pinned to Guardarian on the homepage strip and
+  // ONLY Guardarian — the upstream's `estimationFrom` rotates through the
+  // cheapest provider per pair, but the marketing surface promotes the
+  // platform's primary on-ramp partner consistently. When Guardarian isn't
+  // quoted for the active pair, no provider gets the badge; the selector
+  // still defaults to whichever provider IS quoted, but we don't relabel
+  // an unrelated brand as "Recommended" to fill the slot.
+  const recommended =
+    providers.find((p) => p.type === FORCED_RECOMMENDED_PROVIDER) ?? null;
+  // What to land on when the user hasn't explicitly picked a provider.
+  // Prefer Guardarian; otherwise the first quoted provider so the strip
+  // still has a quote to display.
+  const defaultPick = recommended ?? providers[0] ?? null;
   const selected =
-    providers.find((p) => p.type === selectedType) ?? recommended;
+    providers.find((p) => p.type === selectedType) ?? defaultPick;
   const selectedInfo = selected
     ? getProviderInfo(selected.type, selected.label)
     : getProviderInfo(FORCED_RECOMMENDED_PROVIDER);
   const selectedLabel = selected?.label ?? selectedInfo.label;
-  const isShowingRecommended = selected?.type === recommended?.type;
+  // Only true when the active pick is actually Guardarian — the badge
+  // never travels to a fallback brand.
+  const isShowingRecommended =
+    !!recommended && selected?.type === recommended.type;
 
-  // Reorder the dropdown so the recommended provider sits first regardless
-  // of upstream priority order, AND drop the currently-selected one — the
+  // Reorder the dropdown so the recommended (Guardarian) provider sits
+  // first when present, AND drop the currently-selected one — the
   // selected provider is already shown in the trigger row, so listing it
   // again in the dropdown is a duplicate the user has to scan past. The
   // dropdown becomes "alternatives to the current pick", which is what
@@ -254,7 +261,11 @@ export function FiatProviderStrip({
             const info = getProviderInfo(p.type, p.label);
             const isSelected = (selected?.type ?? '') === p.type;
             const isGuardarian = p.type === FORCED_RECOMMENDED_PROVIDER;
-            const isRecPick = p.type === recommended?.type;
+            // `isRecPick` controls whether picking this row clears the
+            // selection (defaults back to Guardarian) vs. sets an explicit
+            // override. Only true when this row IS Guardarian — when
+            // Guardarian isn't quoted, every pick is an explicit override.
+            const isRecPick = !!recommended && p.type === recommended.type;
             // The upstream's `isRecommended` flag marks the cheapest
             // provider for this pair. We show "Best rate" on whichever
             // provider that is, unless it's also Guardarian (in which

@@ -1,9 +1,15 @@
-// Client-side helpers for the calculator. Heavy lifting (API key handling,
-// v1/v2 selection, reverse synthesis) lives in `app/api/estimate/route.ts`
-// — the browser only ever talks to our own route, never directly to the
-// upstream. Keeps the API key off the wire.
+// Browser-side API for the calculator. Talks directly to vip-api — no Next
+// proxy in front, so we only have one network hop and one place to harden.
+//
+// Why direct: the proxy was a point of failure (extra hop, separate timeout,
+// rate limit, edge cache window all stacked on top of the upstream's own
+// behavior). The upstream is publicly reachable from the browser already
+// (the legacy SPA calls it the same way via axios with `withCredentials`),
+// so we just inline the call and the response normalization.
 
-import { SITE_URL } from '@/lib/config';
+import { SITE_URL, VIP_API_BASE } from '@/lib/config';
+
+import { getNowUsdPriceClient } from './now-price.client';
 
 export type RateFlow = 'standard' | 'fixed-rate';
 export type EstimateType = 'direct' | 'reverse';
@@ -11,8 +17,8 @@ export type EstimateType = 'direct' | 'reverse';
 export interface EstimateRequest {
   from: string;
   to: string;
-  /** Network for `from`. Defaults server-side to the lowercase ticker — fine
-   *  for single-network coins (BTC, ETH); required for multi-network ones
+  /** Network for `from`. Defaults to the lowercase ticker — fine for
+   *  single-network coins (BTC, ETH); required for multi-network ones
    *  (USDT/TRC20, USDT/ERC20, …) where the ticker alone is ambiguous. */
   fromNetwork?: string;
   toNetwork?: string;
@@ -58,9 +64,9 @@ export interface EstimateResponse {
   withdrawalFee: number | null;
   depositFee: number | null;
   /**
-   * Extra amount a Pro user would receive, in USD. Server-side derived
-   * from the cashback API (returns NOW token) × cached NOW→USD price.
-   * `null` when either lookup fails; `0` when the pair offers no benefit.
+   * Extra amount a Pro user would receive, in USD. Derived from the
+   * cashback API (returns NOW token) × cached NOW→USD price. `null` when
+   * either lookup fails; `0` when the pair offers no benefit.
    */
   cashbackUsd: number | null;
   /** Available providers (fiat on-ramps). Empty for crypto-crypto pairs. */
@@ -72,72 +78,408 @@ export interface EstimateError {
   message: string;
 }
 
-export async function fetchEstimate(req: EstimateRequest): Promise<EstimateResponse> {
-  const flow = req.flow ?? 'standard';
-  const type = req.type ?? 'direct';
-  const params = new URLSearchParams({
-    from: req.from.toLowerCase(),
-    to: req.to.toLowerCase(),
-    flow,
-    type,
-  });
-  if (req.fromNetwork) params.set('fromNetwork', req.fromNetwork.toLowerCase());
-  if (req.toNetwork) params.set('toNetwork', req.toNetwork.toLowerCase());
-  if (type === 'direct' && req.fromAmount != null)
-    params.set('fromAmount', String(req.fromAmount));
-  if (type === 'reverse' && req.toAmount != null)
-    params.set('toAmount', String(req.toAmount));
-  // `useRateId=true` is required for fixed-rate quotes — without it the
-  // upstream returns a price snapshot but no `rateId`, so we couldn't
-  // bind it to a transaction at submit time. The same flag is what
-  // unlocks the same-asset (private-transfer) path on vip-api.
-  if (flow === 'fixed-rate') params.set('useRateId', 'true');
+// ─── Upstream shapes (vip-api `/v1.3/exchange/estimate`) ───────────────────
 
-  const res = await fetch(`/api/estimate?${params.toString()}`, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-    signal: req.signal,
-    cache: 'no-store',
-  });
-  const data = (await res.json().catch(() => null)) as unknown;
-  if (!res.ok || !data) {
-    throw (data as EstimateError | null) ?? {
-      error: 'unknown',
-      message: `HTTP ${res.status}`,
-    };
-  }
-  if (
-    typeof data === 'object' &&
-    data !== null &&
-    'error' in data &&
-    typeof (data as { error: unknown }).error === 'string'
-  ) {
-    throw data as EstimateError;
-  }
-  return data as EstimateResponse;
+interface UpstreamProvider {
+  id: string;
+  type: string;
+  label: string;
+  isAllowed: boolean;
+  isConvertible: boolean;
+  isAmountInRange: boolean;
+  estimatedAmount: number | null;
+  minAmount: number | null;
+  maxAmount: number | null;
+  custom: {
+    flow: RateFlow;
+    type: EstimateType;
+    rateId: string | null;
+    transactionSpeedForecast: string | null;
+    validUntil: string | null;
+    warningMessage: string | null;
+    withdrawalFee: number | null;
+    depositFee: number | null;
+  };
+  cashback?: string | number | null;
+  // Sometimes a structured envelope, sometimes a plain string.
+  error: unknown;
 }
 
+interface UpstreamSummary {
+  estimatedAmount: number | null;
+  minAmount: number | null;
+  maxAmount: number | null;
+  estimationFrom?: string | null;
+  estimationFromLabel?: string | null;
+}
+
+interface UpstreamResponse {
+  summary: UpstreamSummary;
+  providers: UpstreamProvider[];
+}
+
+const toNumber = (v: unknown): number | null => {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+const stringifyUpstreamError = (raw: unknown): string => {
+  if (typeof raw === 'string' && raw.trim()) return raw;
+  if (raw && typeof raw === 'object') {
+    const r = raw as { message?: unknown; error?: unknown; code?: unknown };
+    if (typeof r.message === 'string' && r.message.trim()) return r.message;
+    if (typeof r.error === 'string' && r.error.trim()) return r.error;
+    if (typeof r.code === 'string' && r.code.trim()) return r.code;
+  }
+  return 'Estimate unavailable';
+};
+
+const buildUpstreamUrl = (path: string, req: EstimateRequest): URL => {
+  const u = new URL(path, VIP_API_BASE);
+  const from = req.from.toLowerCase();
+  const to = req.to.toLowerCase();
+  const fromNetwork = (req.fromNetwork ?? from).toLowerCase();
+  const toNetwork = (req.toNetwork ?? to).toLowerCase();
+  const flow: RateFlow = req.flow ?? 'standard';
+  const type: EstimateType = req.type ?? 'direct';
+
+  u.searchParams.set('fromCurrency', from);
+  u.searchParams.set('fromNetwork', fromNetwork);
+  u.searchParams.set('toCurrency', to);
+  u.searchParams.set('toNetwork', toNetwork);
+  u.searchParams.set('type', type);
+  u.searchParams.set('flow', flow);
+  // Same ticker on the same network = private transfer. Mirror the legacy
+  // `/private-transfers` SPA's `source=private-transfers` so the upstream's
+  // same-asset path quotes a real fixed-rate fee. Cross-network same-ticker
+  // (USDT-TRX → USDT-ETH) and crypto-crypto pairs go through `site`.
+  const isPrivateTransfer = from === to && fromNetwork === toNetwork;
+  u.searchParams.set('source', isPrivateTransfer ? 'private-transfers' : 'site');
+  if (type === 'direct' && req.fromAmount != null) {
+    u.searchParams.set('fromAmount', String(req.fromAmount));
+  }
+  if (type === 'reverse' && req.toAmount != null) {
+    u.searchParams.set('toAmount', String(req.toAmount));
+  }
+  // `useRateId=true` is required for fixed-rate quotes — without it the
+  // upstream returns a price snapshot but no `rateId`, so we couldn't bind
+  // it to a transaction at submit time. Same flag unlocks the same-asset
+  // (private-transfer) path.
+  if (flow === 'fixed-rate') u.searchParams.set('useRateId', 'true');
+  return u;
+};
+
+export async function fetchEstimate(req: EstimateRequest): Promise<EstimateResponse> {
+  const type: EstimateType = req.type ?? 'direct';
+  const from = req.from.toLowerCase();
+  const to = req.to.toLowerCase();
+
+  if (type === 'direct' && req.fromAmount == null) {
+    throw { error: 'bad_request', message: 'fromAmount required for direct' };
+  }
+  if (type === 'reverse' && req.toAmount == null) {
+    throw { error: 'bad_request', message: 'toAmount required for reverse' };
+  }
+
+  const upstream = buildUpstreamUrl('/v1.3/exchange/estimate', req);
+  // Cashback is a separate endpoint that returns the value in NOW token.
+  // Run in parallel with the estimate so the round-trip stays single-flight
+  // from the calculator's perspective. Failures are non-fatal — the Pro
+  // upsell just hides.
+  const cashbackUrl = buildUpstreamUrl('/v1/cashback/estimate', req);
+
+  let res: Response;
+  let cashbackRes: Response | null = null;
+  let nowUsdPrice: number | null = null;
+  try {
+    [res, cashbackRes, nowUsdPrice] = await Promise.all([
+      fetch(upstream.toString(), {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: req.signal,
+        cache: 'no-store',
+      }),
+      fetch(cashbackUrl.toString(), {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: req.signal,
+        cache: 'no-store',
+      }).catch(() => null),
+      getNowUsdPriceClient(req.signal).catch(() => null),
+    ]);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw {
+      error: 'upstream_unreachable',
+      message: 'Estimate service unavailable',
+    } as EstimateError;
+  }
+
+  const data = (await res.json().catch(() => null)) as UpstreamResponse | null;
+  if (!res.ok || !data || !Array.isArray(data.providers)) {
+    throw {
+      error: 'upstream_failure',
+      message: `Upstream HTTP ${res.status}`,
+    } as EstimateError;
+  }
+
+  const provider =
+    data.providers.find((pr) => pr.isAllowed && pr.estimatedAmount != null) ??
+    data.providers[0];
+  if (!provider) {
+    throw {
+      error: 'no_providers',
+      message: 'No estimate provider available',
+    } as EstimateError;
+  }
+  if (provider.error) {
+    throw {
+      error: 'provider_error',
+      message: stringifyUpstreamError(provider.error),
+    } as EstimateError;
+  }
+
+  const estimated = toNumber(provider.estimatedAmount);
+  const fromAmt =
+    type === 'direct'
+      ? Number(req.fromAmount) || 0
+      : (estimated ?? 0);
+  const toAmt = type === 'direct' ? estimated : (Number(req.toAmount) || null);
+
+  const recommendedType = (data.summary?.estimationFrom ?? '').toLowerCase();
+  const providers: EstimateProvider[] = data.providers
+    .filter((pr) => pr.isAllowed && pr.estimatedAmount != null)
+    .map((pr) => ({
+      type: (pr.type ?? '').toLowerCase(),
+      label: pr.label ?? pr.type ?? '',
+      estimatedAmount: toNumber(pr.estimatedAmount),
+      minAmount: toNumber(pr.minAmount),
+      maxAmount: toNumber(pr.maxAmount),
+      isRecommended:
+        !!recommendedType && (pr.type ?? '').toLowerCase() === recommendedType,
+    }));
+
+  let cashbackUsd: number | null = null;
+  if (cashbackRes && cashbackRes.ok && nowUsdPrice && nowUsdPrice > 0) {
+    const body = (await cashbackRes.json().catch(() => null)) as
+      | { cashback?: unknown }
+      | null;
+    const cashbackNow = toNumber(body?.cashback);
+    if (cashbackNow != null && cashbackNow > 0) {
+      cashbackUsd = cashbackNow * nowUsdPrice;
+    } else if (cashbackNow === 0) {
+      cashbackUsd = 0;
+    }
+  }
+
+  return {
+    fromCurrency: from,
+    toCurrency: to,
+    fromAmount: fromAmt,
+    toAmount: toAmt,
+    flow: provider.custom.flow,
+    type: provider.custom.type,
+    rateId: provider.custom.rateId,
+    validUntil: provider.custom.validUntil,
+    transactionSpeedForecast: provider.custom.transactionSpeedForecast,
+    warningMessage: provider.custom.warningMessage,
+    minAmount: toNumber(provider.minAmount),
+    maxAmount: toNumber(provider.maxAmount),
+    isAmountInRange: provider.isAmountInRange !== false,
+    withdrawalFee: toNumber(provider.custom.withdrawalFee),
+    depositFee: toNumber(provider.custom.depositFee),
+    cashbackUsd,
+    providers,
+  };
+}
+
+// ─── Transaction creation ──────────────────────────────────────────────────
+
+export interface CreateTransactionRequest {
+  fromCurrency: string;
+  toCurrency: string;
+  fromNetwork: string;
+  toNetwork: string;
+  /** Recipient (payout) wallet. Empty string for fiat-out flows where the
+   *  user gets paid to bank, not chain. */
+  address: string;
+  /** Memo / destination tag for chains that need it. */
+  extraId?: string;
+  /** Refund address — for anonymous-from currencies the upstream insists. */
+  refundAddress?: string;
+  /** Pricing flow chosen by the user. Defaults to `'standard'`. */
+  flow?: RateFlow;
+  /** Side the user typed; the upstream settles the counterpart at the rate. */
+  type?: EstimateType;
+  fromAmount?: string | number;
+  toAmount?: string | number;
+  /** Required for `flow === 'fixed-rate'`. Issued by `fetchEstimate`. */
+  rateId?: string;
+  /** Provider override. Defaults to the upstream's recommended pick. */
+  provider?: string;
+  /** Promo code (validated server-side). */
+  promoCode?: string;
+  /** `'site'`, `'private-transfers'`, `'fiat'`, `'tg_app'`, `'bridge'`. */
+  source?: string;
+  /** Required for fiat flows the dashboard tracks against the user. */
+  userId?: string;
+  /** Sub-affiliation token. */
+  linkId?: string;
+  /** Misc UTM/landing tracking. */
+  info?: Record<string, unknown>;
+  /** When `true`, sends `credentials: 'include'` so the upstream's session
+   *  cookie travels with the request. Required for authed flows that bind
+   *  the transaction to a logged-in user. */
+  authenticated?: boolean;
+  signal?: AbortSignal;
+}
+
+export interface CreateTransactionResponse {
+  id: string;
+  payinAddress: string | null;
+  payoutAddress: string | null;
+  fromAmount: number | null;
+  toAmount: number | null;
+  validUntil: string | null;
+  redirectUrl: string | null;
+}
+
+export interface CreateTransactionError {
+  error: string;
+  message: string;
+}
+
+interface UpstreamTxResponse {
+  id?: string;
+  payinAddress?: string;
+  payoutAddress?: string;
+  fromAmount?: number;
+  toAmount?: number;
+  validUntil?: string;
+  redirect_url?: string;
+  redirectUrl?: string;
+  message?: string;
+}
+
+export async function createTransaction(
+  req: CreateTransactionRequest,
+): Promise<CreateTransactionResponse> {
+  const flow: RateFlow = req.flow ?? 'standard';
+  if (flow === 'fixed-rate' && !req.rateId) {
+    throw {
+      error: 'bad_request',
+      message: 'rateId required for fixed-rate',
+    } as CreateTransactionError;
+  }
+
+  const payload: Record<string, unknown> = {
+    provider: req.provider ?? 'default',
+    fromCurrency: req.fromCurrency.toLowerCase(),
+    toCurrency: req.toCurrency.toLowerCase(),
+    fromNetwork: req.fromNetwork.toLowerCase(),
+    toNetwork: req.toNetwork.toLowerCase(),
+    address: req.address,
+    flow,
+    source: req.source ?? 'site',
+  };
+  if (req.type) payload.type = req.type;
+  if (req.rateId) payload.rateId = req.rateId;
+  if (req.fromAmount != null) payload.fromAmount = req.fromAmount;
+  if (req.toAmount != null) payload.toAmount = req.toAmount;
+  if (req.extraId) payload.extraId = req.extraId;
+  if (req.refundAddress) payload.refundAddress = req.refundAddress;
+  if (req.promoCode) payload.promoCode = req.promoCode;
+  if (req.userId) payload.userId = req.userId;
+  if (req.linkId) payload.linkId = req.linkId;
+  if (req.info) payload.info = req.info;
+
+  const url = `${VIP_API_BASE}/v1.1/transactions`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      // Authed POSTs need the session cookie. Public POSTs (private transfer,
+      // fiat, anon swap) don't, but `omit` is the explicit version of the
+      // browser default for cross-origin without credentials.
+      credentials: req.authenticated ? 'include' : 'omit',
+      signal: req.signal,
+      cache: 'no-store',
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw {
+      error: 'upstream_unreachable',
+      message: 'Transaction service unavailable',
+    } as CreateTransactionError;
+  }
+
+  const data = (await res.json().catch(() => null)) as UpstreamTxResponse | null;
+  if (!res.ok || !data) {
+    throw {
+      error: 'upstream_failure',
+      message:
+        (data && typeof data.message === 'string' && data.message) ||
+        `Upstream HTTP ${res.status}`,
+    } as CreateTransactionError;
+  }
+  if (!data.id) {
+    throw {
+      error: 'upstream_failure',
+      message: data.message ?? 'Missing transaction id',
+    } as CreateTransactionError;
+  }
+
+  return {
+    id: data.id,
+    payinAddress: data.payinAddress ?? null,
+    payoutAddress: data.payoutAddress ?? null,
+    fromAmount: data.fromAmount ?? null,
+    toAmount: data.toAmount ?? null,
+    validUntil: data.validUntil ?? null,
+    redirectUrl: data.redirect_url ?? data.redirectUrl ?? null,
+  };
+}
+
+// ─── Deep-link builders ────────────────────────────────────────────────────
+
 /**
- * Build the production exchange-page deep link. The host site reads these
- * params and pre-fills its calculator. Mirrors `/exchange?from=…&to=…&amount=…`
- * usage from the legacy SPA.
+ * Build the our-app exchange-creation deep link. The page reads these params
+ * and pre-fills its calculator. Mirrors `/exchange?from=…&to=…&amount=…`
+ * usage from the legacy SPA — same param names so legacy entry points still
+ * work after we host `/exchange` ourselves.
+ *
+ * `base` defaults to a same-origin path (no host), which is what we want
+ * when navigating from one page on this site to another. Pass an explicit
+ * base URL when constructing a link from outside this app.
  */
 export function buildExchangeUrl(args: {
   from: string;
   to: string;
   amount?: string | number;
-  /** Reverse mode: encodes `&amountTo=…`. The legacy SPA auto-promotes to
-   *  fixed-rate when this is present (see `legacy_exchange_routing.md`),
-   *  matching how a "I want X TO" intent flows. Wins over `amount`. */
+  /** Reverse mode: encodes `&amountTo=…`. Auto-promotes to fixed-rate when
+   *  this is present (matching the "I want X TO" intent flow). Wins over
+   *  `amount`. */
   toAmount?: string | number;
   flow?: RateFlow;
-  /** When true, adds `&fiatMode=true` so the legacy SPA boots the buy/sell calculator. */
+  /** When true, adds `&fiatMode=true` to boot the buy/sell calculator. */
   fiatMode?: boolean;
-  /** When true, adds `&proExchangeMode=true` so the legacy SPA boots the trade (Pro) calculator. */
+  /** When true, adds `&proExchangeMode=true` to deep-link into legacy's
+   *  trade calculator (we still defer Pro spot/limit/market to legacy). */
   proMode?: boolean;
+  /** `'self'` (default) → relative `/exchange?…` so we route within our
+   *  Next app. Pass an absolute base (`SITE_URL`, `https://other`) to
+   *  force an off-site link. */
   base?: string;
 }): string {
-  const base = args.base ?? SITE_URL;
   const qs = new URLSearchParams({
     from: args.from.toLowerCase(),
     to: args.to.toLowerCase(),
@@ -146,8 +488,17 @@ export function buildExchangeUrl(args: {
   else if (args.amount != null && args.amount !== '') qs.set('amount', String(args.amount));
   if (args.flow === 'fixed-rate') qs.set('rateMode', 'fixed');
   if (args.fiatMode) qs.set('fiatMode', 'true');
-  if (args.proMode) qs.set('proExchangeMode', 'true');
-  return `${base}/exchange?${qs.toString()}`;
+  // Pro mode still rides the legacy URL — our /exchange page deep-links
+  // out to `${SITE_URL}/exchange?proExchangeMode=true` for the Convert
+  // tab so users land in legacy's trade calculator. Forcing the absolute
+  // base when Pro is set keeps that contract intact even when the caller
+  // didn't specify one.
+  if (args.proMode) {
+    qs.set('proExchangeMode', 'true');
+    return `${(args.base ?? SITE_URL).replace(/\/$/, '')}/exchange?${qs.toString()}`;
+  }
+  const base = args.base ?? '';
+  return `${base.replace(/\/$/, '')}/exchange?${qs.toString()}`;
 }
 
 /**
@@ -163,16 +514,9 @@ export function buildExchangeUrl(args: {
 export function buildPrivateTransferUrl(args: {
   ticker: string;
   network?: string;
-  /** Recipient amount (the canonical "you receive" side). Forwards as
-   *  `amountTo` and overrides `fromAmount` when both are present. */
   toAmount?: string | number;
-  /** Sender total (the "you send" side). Forwards as `amount`. Used when
-   *  the user has flipped the rate row so they're typing the total. */
   fromAmount?: string | number;
   address?: string;
-  /** Memo / destination tag / payment ID for chains that require it
-   *  alongside the address (XRP, TON-USDT, Cosmos, Monero). The legacy
-   *  page reads it from `recipientExtraId` (same key as `/exchange`). */
   extraId?: string;
   base?: string;
 }): string {
