@@ -7,6 +7,7 @@ import './footer-overrides.css';
 
 import { Footer as KitFooter } from './footer/Footer';
 
+import { trackEvent } from '@/lib/analytics/track';
 import { createT, type TranslationDict } from '@/lib/i18n/createT';
 
 interface FooterWrapperProps {
@@ -21,20 +22,6 @@ interface FooterWrapperProps {
   languages?: string[];
   languagesNames?: Record<string, string>;
 }
-
-interface TrackEventParams {
-  category: string;
-  action: string;
-  label?: string;
-  value?: number;
-}
-
-const trackEvent = (event: TrackEventParams) => {
-  // Wire to analytics here when available. No-op in scaffold.
-  if (typeof window !== 'undefined' && (window as { dataLayer?: unknown[] }).dataLayer) {
-    (window as unknown as { dataLayer: unknown[] }).dataLayer.push(event);
-  }
-};
 
 export function FooterWrapper({ dict, ...props }: FooterWrapperProps) {
   const t = createT(dict);

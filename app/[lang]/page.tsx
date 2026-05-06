@@ -27,7 +27,9 @@ export default function HomePage() {
         <ReviewsPartners />
       </Suspense>
       <AccountTiers />
-      <RatesLiquidity />
+      <Suspense fallback={<div style={{ minHeight: 600 }} />}>
+        <RatesLiquidity />
+      </Suspense>
       <PrivacySecurity />
       <AppsEverywhere />
       <GlobalReach />

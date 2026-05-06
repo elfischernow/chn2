@@ -1,12 +1,20 @@
+import * as Sentry from '@sentry/nextjs';
+
 /**
- * Next.js instrumentation hook. Runs once per server process on startup
- * (Node runtime only — Edge runtime calls this too but with different
- * semantics; we gate on NEXT_RUNTIME).
- *
- * Today: starts the in-app cron runner that keeps the URL Registry warm
- * and prewarms top pages. See lib/cron/runner.ts for the schedule.
+ * Next.js instrumentation hook. Runs once per server process on startup.
+ * Two responsibilities:
+ *   1. Initialise Sentry on the active runtime (Node or Edge).
+ *   2. Start the in-app cron runner (Node only) — keeps the URL Registry
+ *      warm and prewarms top pages. See lib/cron/runner.ts.
  */
 export async function register(): Promise<void> {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./sentry.server.config');
+  }
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    await import('./sentry.edge.config');
+  }
+
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
   // Avoid spawning cron during `next build` — instrumentation runs there
@@ -16,3 +24,7 @@ export async function register(): Promise<void> {
   const { startCron } = await import('@/lib/cron/runner');
   startCron();
 }
+
+// Required by Sentry to capture errors thrown in nested React Server
+// Components and route handlers under the App Router.
+export const onRequestError = Sentry.captureRequestError;

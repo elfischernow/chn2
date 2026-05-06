@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { calculatorEvents } from '@/lib/analytics/events';
+import { sentryReportError } from '@/lib/sentry/report';
+import { SENTRY_ERROR_TYPES } from '@/lib/sentry/constants';
 import type { Currency } from '@/lib/api/currencies';
 import { useSession } from '@/lib/auth/useSession';
 import {
@@ -35,16 +38,18 @@ import {
   formatDefaultSeed,
 } from './calculator/shared/utils';
 import { LongPressButton } from './calculator/shared/LongPressButton';
+import { RateLockTimer } from './calculator/shared/RateLockTimer';
 import { FiatProviderStrip } from './FiatProviderStrip';
 import { useExchangeEstimate } from './useExchangeEstimate';
 
 const MODES = [
   { id: 'swap', label: 'Swap', sub: 'instant non-custodial exchange' },
   { id: 'buysell', label: 'Buy / Sell', sub: 'with card · Apple Pay · bank' },
-  // Renamed from "Trade" — the legacy URL param is still `proExchangeMode=true`.
-  // The label/copy here is just the homepage's framing; the legacy page boots
-  // the same Pro spot/limit/market calculator either way.
-  { id: 'convert', label: 'Convert', sub: 'advanced orders · balance convert' },
+  // The internal mode id stays `convert` so the URL hash, analytics, and
+  // legacy `proExchangeMode=true` plumbing don't churn — only the user-
+  // facing tab label is renamed back to "Trade", which reads truer to
+  // what the surface is (Pro spot/limit/market book) than "Convert".
+  { id: 'convert', label: 'Trade', sub: 'spot · limit · market · fixed' },
 ] as const;
 
 const MORE_MODES = [
@@ -255,9 +260,13 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   });
 
   // Derived from `flow` so Convert+Fixed shares the same lock affordance
-  // as Swap+Fixed without restating the rule per surface. Rate-id refresh
-  // happens silently in the background via `useExchangeEstimate`'s
-  // `REFRESH_MS` interval — no visible countdown on the rate row.
+  // as Swap+Fixed without restating the rule per surface. The rate-id
+  // refresh runs silently every `REFRESH_MS` (2 min) inside
+  // `useExchangeEstimate`; the countdown rendered on the rate row reads
+  // `estimate.validUntil` so the user sees how long the locked rate is
+  // good for. Private transfer intentionally hides the timer (the
+  // recipient-gets line is the source of truth there) and fiat doesn't
+  // use a rateId — both opt out at the render site below.
   const isFixedFlow = flow === 'fixed-rate';
 
   // Sync the FOLLOWER field with API output. We don't push back into the
@@ -480,6 +489,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
     setTo(from);
     setFromNetwork(toNetwork);
     setToNetwork(fromNetwork);
+    calculatorEvents.switchDirection();
     // No need to clear limit price here — the pair tag stops matching once
     // from/to swap, so `limitPx` reads as '' on the next render.
   };
@@ -511,6 +521,9 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
 
   const onModeSwitch = (next: ModeId) => {
     setMode(next);
+    if (next === 'swap' || next === 'buysell' || next === 'convert') {
+      calculatorEvents.tabChange(next === 'buysell' ? (fiatDir === 'buy' ? 'buy' : 'sell') : (next as 'swap' | 'convert'));
+    }
     if (next === 'swap') applyDefaults('swap');
     else if (next === 'buysell') applyDefaults(fiatDir === 'buy' ? 'buy' : 'sell');
     else if (next === 'convert') applyDefaults('convert');
@@ -764,6 +777,20 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   const showSkeletonTo = isLoading && direction === 'direct';
   const showSkeletonFrom = isLoading && direction === 'reverse';
 
+  // Surface estimator failures to telemetry once per (pair, error) instance
+  // so dashboards count "BTC→ETH unavailable" rather than every keystroke
+  // in a degraded session. The fingerprint groups identical failures.
+  useEffect(() => {
+    if (!error) return;
+    calculatorEvents.pairUnavailable(from, to);
+    sentryReportError({
+      error: new Error(error.message || error.error || 'estimate failed'),
+      type: SENTRY_ERROR_TYPES.CALCULATOR_ERROR,
+      tags: { from_to: `${from}->${to}`, flow },
+      fingerprint: ['calculator', from, to, error.error || 'unknown'],
+    });
+  }, [error, from, to, flow]);
+
   // Out-of-range hint. When the upstream returns a successful estimate but
   // marks the amount as below `minAmount` / above `maxAmount`, surface a
   // clickable button with the exact boundary value so the user can swap
@@ -801,9 +828,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   const showPro = !isFiatMode && !isConvert && (showSkeletonPro || proValuable);
 
   const onProClick = () => {
-    if (typeof window === 'undefined') return;
-    const w = window as unknown as { dataLayer?: unknown[] };
-    w.dataLayer?.push({ category: 'exchange', action: 'press-exchangepro' });
+    calculatorEvents.exchangeClick(`pro:${from}`, to);
   };
 
   return (
@@ -1040,6 +1065,15 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
             <>
               {rateLine ?? (isConvert ? `Market rate: 1 ${from} ≈ … ${to}` : `1 ${from} ≈ … ${to}`)}
             </>
+          )}
+          {/* Lock + countdown for fixed-rate flows. Reads `validUntil`
+              from the same estimate that drives the rate text, so the
+              two stay synchronised. Private transfer hides the timer by
+              skipping this entire branch (`!isPrivate` above); fiat hides
+              it because the provider strip — not the rate row — is its
+              source of truth, and there's no rateId to commit there. */}
+          {isFixedFlow && !isFiatMode && estimate?.validUntil && !error && !outOfRange && !isLoading && (
+            <RateLockTimer validUntil={estimate.validUntil} />
           )}
         </span>
         {isFiatMode ? (

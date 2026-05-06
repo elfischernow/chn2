@@ -8,10 +8,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { trackEvent } from '@/lib/analytics/track';
 import {
   resolveClientPostAuthTarget,
   POST_AUTH_RELOAD,
 } from '@/lib/auth/post-auth.client';
+import { sentryReportError } from '@/lib/sentry/report';
 import {
   validateEmail,
   validatePassword,
@@ -180,6 +182,7 @@ export function AuthFlow({
   );
 
   const track = useCallback((event: { category: string; action: string; label?: string }) => {
+    trackEvent(event);
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       console.debug('[track]', event);
     }
@@ -187,6 +190,12 @@ export function AuthFlow({
 
   const reportError = useCallback(
     (report: { error: Error; type: string; status: number | null; errorMessage: string }) => {
+      sentryReportError({
+        error: report.error,
+        type: report.type,
+        status: report.status,
+        errorMessage: report.errorMessage,
+      });
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         console.warn('[sentry]', report.type, report.errorMessage, report.status);
       }

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import Script from 'next/script';
 import { Suspense, type ReactNode } from 'react';
 
+import { AnalyticsScripts } from '@/components/analytics/AnalyticsScripts';
+import { GlobalErrorReporter } from '@/components/analytics/GlobalErrorReporter';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { LocalizedPathProvider } from '@/components/layout/LocalizedPathContext';
@@ -110,8 +112,10 @@ export default async function LangLayout({
         <Script id="chn-bfcache-reload" strategy="afterInteractive">
           {"addEventListener('pageshow',function(e){if(e.persisted){location.replace(location.href);}});"}
         </Script>
+        <AnalyticsScripts />
         <LocalizationProvider value={clientDict}>
           <LocalizedPathProvider>
+            <GlobalErrorReporter />
             <div className="page-wrap">
               <Header
                 locale={locale}

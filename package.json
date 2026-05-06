@@ -15,6 +15,7 @@
     "docker:down": "docker compose down"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.51.0",
     "@walletconnect/ethereum-provider": "^2.23.9",
     "classnames": "^2.5.1",
     "ioredis": "^5.10.1",

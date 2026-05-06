@@ -5,6 +5,7 @@
 // Rendered below `[lang]/layout.tsx` — header/footer stay visible and the
 // page slot is replaced with a recoverable shell.
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 export default function Error({
@@ -15,9 +16,9 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface the failure into whatever telemetry the host page has wired up
-    // (Sentry, console). Errors thrown server-side ship to the client with a
-    // `digest` only — the hash maps back to the full server log line.
+    // Errors thrown server-side ship to the client with a `digest` only —
+    // the hash maps back to the full server log line.
+    Sentry.captureException(error);
     if (typeof console !== 'undefined') console.error(error);
   }, [error]);
 

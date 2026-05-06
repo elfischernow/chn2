@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 import { LOCALES, DEFAULT_LOCALE } from './lib/config';
@@ -214,6 +215,12 @@ function buildCsp(): string {
       'https://www.tradingview.com',
       'wss://data.tradingview.com',
       'wss://widgetdata.tradingview.com',
+      // GA4 collect endpoint — the inline analytics script POSTs / sendBeacons here.
+      'https://www.google-analytics.com',
+      // Sentry ingestion. The wildcard covers every project's DSN host
+      // (o<orgId>.ingest.sentry.io) without leaking the org id into config.
+      'https://*.sentry.io',
+      'https://*.ingest.sentry.io',
     ],
     'frame-src': ["'self'", 'https://www.tradingview.com', 'https://s.tradingview.com'],
     'worker-src': ["'self'", 'blob:'],
@@ -227,4 +234,18 @@ function buildCsp(): string {
   return parts.join('; ');
 }
 
-export default nextConfig;
+// Wrap with Sentry. Source-map upload only runs when SENTRY_AUTH_TOKEN is
+// present (CI), so local dev `next build` never tries to talk to Sentry.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  // Strip source maps from the public bundle after upload — only Sentry's
+  // backend keeps a copy for symbolication.
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  // Keep the build quiet when no auth token is present.
+  disableLogger: true,
+  telemetry: false,
+});
+

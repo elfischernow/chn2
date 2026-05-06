@@ -5,9 +5,9 @@ import { unstable_cache } from 'next/cache';
 import { CACHE_SHORT, CACHE_MEDIUM, CACHE_LONG } from '@/lib/config';
 
 import IDS from './ids.json';
-import type { SparklinePoint, SparklineRange } from './types';
+import type { SparklinePoint, SparklineRange, TopCurrency } from './types';
 
-export type { SparklinePoint, SparklineRange } from './types';
+export type { SparklinePoint, SparklineRange, TopCurrency } from './types';
 export { SPARKLINE_RANGES } from './types';
 
 /**
@@ -185,4 +185,77 @@ function cryptorankHeaders(): Record<string, string> {
 function revalidateFor(range: SparklineRange): number {
   // Intraday windows refresh fast, longer ones rarely change.
   return range === '1D' || range === '1W' ? CACHE_SHORT : CACHE_MEDIUM;
+}
+
+/**
+ * Fetch the top-N coins by market-cap rank with price + volume + icon.
+ * The Cryptorank `limit` param is enum-bound to {100, 500, 1000} on the
+ * upstream — we always ask for 100 (smallest valid bucket) and slice
+ * down. Cached for `CACHE_SHORT` (1 min) so the homepage rates board
+ * mirrors the cryptorank refresh cadence.
+ */
+export async function getTopCurrencies(take = 8): Promise<TopCurrency[]> {
+  const all = await loadTopCurrencies();
+  return all.slice(0, take);
+}
+
+const loadTopCurrencies = unstable_cache(
+  async (): Promise<TopCurrency[]> => {
+    const base = (process.env.CRYPTORANK_API_BASEURL ?? DEFAULT_BASE).replace(/\/$/, '');
+    if (!base) return [];
+    const params = new URLSearchParams({
+      sortBy: 'rank',
+      sortDirection: 'ASC',
+      limit: '100',
+    });
+    try {
+      const res = await fetch(`${base}/currencies?${params.toString()}`, {
+        headers: cryptorankHeaders(),
+        next: { revalidate: CACHE_SHORT },
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { data?: RawTopCurrency[] };
+      const rows = json?.data;
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map(toTopCurrency)
+        .filter((c): c is TopCurrency => c !== null);
+    } catch {
+      return [];
+    }
+  },
+  ['cryptorank-top-currencies-v1'],
+  { revalidate: CACHE_SHORT, tags: ['cryptorank'] },
+);
+
+interface RawTopCurrency {
+  id?: number;
+  symbol?: string;
+  name?: string;
+  key?: string;
+  rank?: number | null;
+  price?: string | number;
+  marketCap?: string | number | null;
+  volume24h?: string | number | null;
+  images?: { x60?: string; x150?: string; icon?: string; native?: string };
+}
+
+function toTopCurrency(r: RawTopCurrency): TopCurrency | null {
+  const price = Number(r.price);
+  if (!Number.isFinite(price) || !r.id || !r.symbol || !r.name || !r.key) return null;
+  const num = (v: unknown): number | null => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    id: r.id,
+    symbol: r.symbol.toUpperCase(),
+    name: r.name,
+    key: r.key,
+    rank: typeof r.rank === 'number' ? r.rank : null,
+    price,
+    marketCap: num(r.marketCap),
+    volume24h: num(r.volume24h),
+    iconUrl: r.images?.x60 ?? r.images?.icon ?? r.images?.native ?? null,
+  };
 }

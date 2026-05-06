@@ -59,7 +59,17 @@
 
   /* ───────── Gradients ───────── */
   --chn-gradient-brand:  linear-gradient(180deg, #3AAE6A 11%, #32E37B 73%, #3AAE6A 100%);
-  --chn-gradient-gold:   linear-gradient(135deg, #4EA1F5 0%, #5C95F4 19%, #8278F2 55%, #8E6FF2 65%, #8A80E8 72%, #81ADD1 85%, #76EAB1 100%);
+  /* Brand accent sweep — blue → cyan → mint. Used for focus rings, hero
+     CTA fills, and any "Pro / premium" highlight. Single token so a
+     future palette swap touches one place. No magenta/purple stops. */
+  --chn-gradient-accent: linear-gradient(135deg, #4EA1F5 0%, #5BC0DE 50%, #76EAB1 100%);
+  /* Gold-name kept for backwards-compatible callers; aliased to accent so
+     the token resolves to the same blue→mint sweep. */
+  --chn-gradient-gold:   var(--chn-gradient-accent);
+  /* Accent stop colours exposed individually for tints (rgba) and shadows. */
+  --chn-accent-blue:     #4EA1F5;
+  --chn-accent-cyan:     #5BC0DE;
+  --chn-accent-mint:     #76EAB1;
 
   /* ───────── Shadows ───────── */
   --chn-shadow-card:     0 4px 16px rgba(43, 43, 54, 0.04);
@@ -329,6 +339,11 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     --paper-3: #1F1F29;
     --line: #2A2A35;
     --line-soft: #1F1F29;
+    /* Dark-mode soft accent. The light-theme value (#E6F9F1) is a near-
+       white mint and reads as a hard white halo on top of the dark
+       `--paper-2` pill (visible on the hero "Trusted globally" eyebrow).
+       Swap to a low-alpha green tint that blends with the surface. */
+    --accent-soft: rgba(0, 194, 111, 0.22);
   }
 
   html, body {
@@ -487,11 +502,11 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   }
   .mm-hl-img.tone-orange { background: linear-gradient(135deg, #FFE7CC 0%, #FFC089 100%); }
   .mm-hl-img.tone-green  { background: linear-gradient(135deg, #CFF3DF 0%, #7AD8A6 100%); }
-  .mm-hl-img.tone-violet { background: linear-gradient(135deg, #E5DEFF 0%, #B4A6F7 100%); }
+  .mm-hl-img.tone-violet { background: linear-gradient(135deg, #DDF2FF 0%, #76EAB1 100%); }
   .mm-hl-img.tone-blue   { background: linear-gradient(135deg, #D6EBFF 0%, #88B6F0 100%); }
   :where(html,body)[data-theme="dark"] .mm-hl-img.tone-orange { background: linear-gradient(135deg, #4B2D14 0%, #8C5226 100%); }
   :where(html,body)[data-theme="dark"] .mm-hl-img.tone-green  { background: linear-gradient(135deg, #143028 0%, #2C6F4F 100%); }
-  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-violet { background: linear-gradient(135deg, #221A40 0%, #4F3F8E 100%); }
+  :where(html,body)[data-theme="dark"] .mm-hl-img.tone-violet { background: linear-gradient(135deg, #102B36 0%, #1F4A56 100%); }
   :where(html,body)[data-theme="dark"] .mm-hl-img.tone-blue   { background: linear-gradient(135deg, #102236 0%, #2A4D7A 100%); }
   .mm-hl-dot {
     width: 22px; height: 22px; border-radius: 999px;
@@ -510,7 +525,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     line-height: 1.4;
   }
   .mm-badge.new { background: var(--accent); color: #fff; }
-  .mm-badge.popular { background: rgba(124,92,255,0.14); color: #6B49FF; }
+  .mm-badge.popular { background: rgba(91,192,222,0.18); color: #2A8FB0; }
   .mm-badge.dev { background: rgba(78,149,255,0.14); color: #2B6FE0; }
 
   /* Plain link list */
@@ -572,7 +587,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     background:
       radial-gradient(circle at 22% 18%, rgba(0,194,111,0.34), transparent 40%),
       radial-gradient(circle at 78% 14%, rgba(255,180,0,0.24), transparent 36%),
-      radial-gradient(circle at 60% 55%, rgba(124,92,255,0.34), transparent 44%),
+      radial-gradient(circle at 60% 55%, rgba(91,192,222,0.34), transparent 44%),
       radial-gradient(circle at 16% 72%, rgba(78,149,255,0.30), transparent 42%),
       radial-gradient(circle at 88% 84%, rgba(255,106,85,0.22), transparent 40%),
       radial-gradient(circle at 42% 95%, rgba(232,121,249,0.26), transparent 42%);
@@ -585,7 +600,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     right: 160px; bottom: -200px; width: 480px; height: 480px;
     background:
       radial-gradient(circle at 50% 50%, rgba(232,121,249,0.32), transparent 60%),
-      radial-gradient(circle at 30% 70%, rgba(124,92,255,0.22), transparent 55%);
+      radial-gradient(circle at 30% 70%, rgba(91,192,222,0.22), transparent 55%);
     filter: blur(70px);
     pointer-events: none; z-index: 0;
     animation: blobShift2 14s ease-in-out infinite alternate;
@@ -603,7 +618,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     background:
       radial-gradient(circle at 22% 28%, rgba(0,194,111,0.45), transparent 42%),
       radial-gradient(circle at 78% 22%, rgba(255,180,0,0.30), transparent 38%),
-      radial-gradient(circle at 65% 65%, rgba(124,92,255,0.42), transparent 45%),
+      radial-gradient(circle at 65% 65%, rgba(91,192,222,0.42), transparent 45%),
       radial-gradient(circle at 18% 78%, rgba(78,149,255,0.36), transparent 42%),
       radial-gradient(circle at 88% 88%, rgba(255,106,85,0.28), transparent 40%);
   }
@@ -671,14 +686,14 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   }
   .hero-cta { display: flex; gap: 10px; margin-top: 32px; }
 
-  /* Hero secondary CTA — interesting but not green */
+  /* Hero secondary CTA — accent gradient ring around an inner pill. */
   .btn-hero {
     position: relative;
     /* 1px gradient ring around the inner pill. */
     height: 56px; padding: 1px;
     border: 0; cursor: pointer; border-radius: 16px;
     font-family: inherit;
-    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    background: var(--chn-gradient-accent);
     overflow: visible;
     transition: transform 200ms ease, box-shadow 250ms ease;
     display: inline-block;
@@ -700,14 +715,14 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   .btn-hero-arrow {
     position: relative; z-index: 1;
     width: 28px; height: 28px; border-radius: 999px;
-    background: linear-gradient(135deg, #C84BFF 0%, #7C5CFF 50%, #4E95FF 100%);
+    background: var(--chn-gradient-accent);
     color: #fff;
     display: grid; place-items: center;
     transition: all 250ms ease;
   }
-  .btn-hero:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(124,92,255,0.35); }
+  .btn-hero:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(78,161,245,0.35); }
   .btn-hero:hover::before { filter: saturate(1.15); }
-  .btn-hero:hover .btn-hero-arrow { transform: translateX(3px) scale(1.04); box-shadow: 0 4px 14px -2px rgba(124,92,255,0.5); }
+  .btn-hero:hover .btn-hero-arrow { transform: translateX(3px) scale(1.04); box-shadow: 0 4px 14px -2px rgba(91,192,222,0.5); }
   :where(html,body)[data-theme="dark"] .btn-hero-bg { background: #1a1a22; }
   :where(html,body)[data-theme="dark"] .btn-hero-arrow { color: #fff; }
 
@@ -812,9 +827,10 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
        trigger to land exactly on the field's vertical centre we equate
        the two: `padding-bottom = padding-top + label-line + gap`.
        The 8px gap between label and selector is what stops "Fees
-       included" from snugging into the trigger pill. Field totals ~120px
-       — thick enough to feel like a primary surface, not a chip. */
-    padding: 16px 18px 37px;
+       included" from snugging into the trigger pill. Bottom slightly
+       under-paid vs the centring rule (~5px) — trigger sits a hair above
+       centre, but the field reads tighter, which is the intended look. */
+    padding: 16px 18px 32px;
     position: relative;
     transition: background 150ms;
     box-shadow: inset 0 0 0 1px rgba(15,15,20,0.04);
@@ -834,15 +850,16 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   }
   /* 1px gradient ring on focus, drawn via the standard "two-mask" trick:
      gradient bg sits behind a transparent border, then a content-box mask
-     subtracts the inside, leaving a 1px ribbon along the radius. Same hue
-     family as `.btn-hero` so the two focus affordances rhyme. */
+     subtracts the inside, leaving a 1px ribbon along the radius. Uses the
+     shared `--chn-gradient-accent` token (blue → cyan → mint) so every
+     focus affordance reads as the same accent. */
   .swap-field::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    background: var(--chn-gradient-accent);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
             mask-composite: exclude;
@@ -1227,6 +1244,19 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   :where(html,body)[data-theme="dark"] .swap-rate-timer {
     background: rgba(0, 194, 111, 0.16);
   }
+  /* Approaching `validUntil` — flips to amber so the user notices the
+     impending refresh. The hook reschedules well before this happens in
+     the happy path; this state is mostly a fallback for backgrounded
+     tabs whose `setInterval` got throttled. */
+  .swap-rate-timer-low {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.16);
+  }
+  :where(html,body)[data-theme="dark"] .swap-rate-timer-low {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.18);
+  }
+  .swap-rate-timer-time { font-variant-numeric: tabular-nums; }
 
   .swap-flip {
     /* Anchor to the bottom edge of the FROM field's wrapping slot, half
@@ -1285,7 +1315,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(95deg, #D946EF 0%, #A855F7 35%, #6366F1 65%, #3B82F6 100%);
+    background: var(--chn-gradient-accent);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
             mask-composite: exclude;
@@ -1935,12 +1965,12 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   /* Keyboard focus-visible — quiet ring just for a11y, doesn't trigger
      the full hover treatment (per design: button look is hover-only). */
   .swap-pro:focus-visible {
-    outline: 2px solid rgba(124, 92, 255, 0.6);
+    outline: 2px solid rgba(91, 192, 222, 0.6);
     outline-offset: 2px;
   }
   .swap-pro-text { color: var(--ink); }
   .swap-pro-text strong {
-    background: linear-gradient(90deg, #C84BFF 0%, #7C5CFF 50%, #4E95FF 100%);
+    background: var(--chn-gradient-accent);
     -webkit-background-clip: text; background-clip: text; color: transparent;
     font-weight: 700;
   }
@@ -1951,10 +1981,10 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   .swap-pro:hover {
     background: linear-gradient(
       135deg,
-      rgba(124, 92, 255, 0.14) 0%,
-      rgba(78, 149, 255, 0.10) 100%
+      rgba(78, 161, 245, 0.14) 0%,
+      rgba(118, 234, 177, 0.12) 100%
     );
-    box-shadow: inset 0 0 0 1px rgba(124, 92, 255, 0.32);
+    box-shadow: inset 0 0 0 1px rgba(91, 192, 222, 0.32);
     color: var(--ink);
     transform: translateY(-1px);
   }
@@ -1969,10 +1999,10 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   :where(html,body)[data-theme="dark"] .swap-pro:hover {
     background: linear-gradient(
       135deg,
-      rgba(141, 124, 255, 0.22) 0%,
-      rgba(78, 149, 255, 0.16) 100%
+      rgba(78, 161, 245, 0.22) 0%,
+      rgba(118, 234, 177, 0.18) 100%
     );
-    box-shadow: inset 0 0 0 1px rgba(141, 124, 255, 0.32);
+    box-shadow: inset 0 0 0 1px rgba(91, 192, 222, 0.40);
   }
   /* Skeleton sized to a typical "Get 0.012345 ETH more with Pro" line. */
   .swap-skel-pro {
@@ -2058,7 +2088,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     color: #4838c5;
   }
   :where(html,body)[data-theme="dark"] .rec-badge-recommended {
-    background: rgba(141, 124, 255, 0.22);
+    background: rgba(91, 192, 222, 0.22);
     color: #b9a4ff;
   }
   .swap-fiat-rec .rec-badge-best,
@@ -2798,7 +2828,11 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   font-size: 88px; font-weight: 700; letter-spacing: -0.035em; line-height: 0.96;
   margin: 0; color: var(--ink); max-width: 900px;
 }
-.tr-head h2 .tr-h2-light {
+/* Used as the second-line softener inside section h2s across the homepage
+   (TrackRecord, AccountTiers, AppsEverywhere, GlobalReach, ProductsFamily,
+   PrivacySecurity). Originally scoped to `.tr-head h2` — broadened so all
+   sections render the same visual treatment. */
+.tr-h2-light {
   color: var(--ink-3); font-weight: 300;
 }
 .tr-grid {
@@ -2857,7 +2891,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   background:
     radial-gradient(circle at 20% 24%, rgba(0,194,111,0.30), transparent 42%),
     radial-gradient(circle at 78% 16%, rgba(255,180,0,0.22), transparent 38%),
-    radial-gradient(circle at 58% 52%, rgba(124,92,255,0.30), transparent 46%),
+    radial-gradient(circle at 58% 52%, rgba(91,192,222,0.30), transparent 46%),
     radial-gradient(circle at 14% 70%, rgba(78,149,255,0.26), transparent 44%),
     radial-gradient(circle at 86% 76%, rgba(232,121,249,0.24), transparent 42%),
     radial-gradient(circle at 44% 92%, rgba(255,106,85,0.20), transparent 42%);
@@ -2878,7 +2912,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   height: clamp(420px, 40vw, 720px);
   background:
     radial-gradient(circle at 50% 50%, rgba(232,121,249,0.26), transparent 60%),
-    radial-gradient(circle at 30% 70%, rgba(124,92,255,0.20), transparent 55%);
+    radial-gradient(circle at 30% 70%, rgba(91,192,222,0.20), transparent 55%);
   filter: blur(90px);
   pointer-events: none;
   z-index: -1;
@@ -2891,7 +2925,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   background:
     radial-gradient(circle at 20% 24%, rgba(0,194,111,0.42), transparent 42%),
     radial-gradient(circle at 78% 16%, rgba(255,180,0,0.30), transparent 38%),
-    radial-gradient(circle at 58% 52%, rgba(124,92,255,0.42), transparent 46%),
+    radial-gradient(circle at 58% 52%, rgba(91,192,222,0.42), transparent 46%),
     radial-gradient(circle at 14% 70%, rgba(78,149,255,0.34), transparent 44%),
     radial-gradient(circle at 86% 76%, rgba(232,121,249,0.32), transparent 42%);
 }
@@ -2936,7 +2970,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   background:
     radial-gradient(circle at 22% 28%, rgba(78,149,255,0.28), transparent 42%),
     radial-gradient(circle at 78% 18%, rgba(0,194,111,0.22), transparent 38%),
-    radial-gradient(circle at 56% 56%, rgba(124,92,255,0.26), transparent 46%),
+    radial-gradient(circle at 56% 56%, rgba(91,192,222,0.26), transparent 46%),
     radial-gradient(circle at 14% 76%, rgba(232,121,249,0.20), transparent 44%),
     radial-gradient(circle at 88% 80%, rgba(255,180,0,0.18), transparent 42%);
   filter: blur(80px);
@@ -2952,7 +2986,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   width: clamp(420px, 40vw, 720px);
   height: clamp(420px, 40vw, 720px);
   background:
-    radial-gradient(circle at 50% 50%, rgba(124,92,255,0.24), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(91,192,222,0.24), transparent 60%),
     radial-gradient(circle at 30% 70%, rgba(78,149,255,0.18), transparent 55%);
   filter: blur(90px);
   pointer-events: none;
@@ -2964,7 +2998,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   background:
     radial-gradient(circle at 22% 28%, rgba(78,149,255,0.40), transparent 42%),
     radial-gradient(circle at 78% 18%, rgba(0,194,111,0.34), transparent 38%),
-    radial-gradient(circle at 56% 56%, rgba(124,92,255,0.40), transparent 46%),
+    radial-gradient(circle at 56% 56%, rgba(91,192,222,0.40), transparent 46%),
     radial-gradient(circle at 14% 76%, rgba(232,121,249,0.30), transparent 44%);
 }
 
@@ -3306,7 +3340,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
 :where(html,body)[data-theme="dark"] .rp-review-partner {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1px rgba(141, 124, 255, 0.4),
+    0 0 0 1px rgba(91, 192, 222, 0.4),
     0 12px 32px -16px rgba(80, 57, 224, 0.5);
 }
 .rp-tag {
@@ -3319,7 +3353,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   color: #4838c5;
 }
 :where(html,body)[data-theme="dark"] .rp-tag-partner {
-  background: rgba(141, 124, 255, 0.22);
+  background: rgba(91, 192, 222, 0.22);
   color: #b9a4ff;
 }
 
@@ -3540,73 +3574,103 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
 }
 
-.rates-table {
+/* Live coin board — server-fetched cryptorank rows, one per top asset. */
+.rates-board {
   max-width: 1280px; margin: 0 auto;
   padding: 0 40px;
   font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
-.rates-row {
+.rates-board-row {
   display: grid;
-  grid-template-columns: 240px 1fr 100px 200px 100px;
+  grid-template-columns: 2fr 1.2fr 110px 1.6fr 110px;
   align-items: center; gap: 24px;
-  padding: 18px 0;
+  padding: 18px 8px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   font-size: 16px;
-  transition: background 200ms;
+  text-decoration: none; color: inherit;
+  border-radius: 12px;
+  transition: background 180ms ease, transform 180ms ease;
 }
-.rates-row:not(.head):hover { background: rgba(255,255,255,0.02); }
-.rates-row.head {
-  font-size: 16px; color: rgba(255,255,255,0.4);
+a.rates-board-row { cursor: pointer; }
+a.rates-board-row:hover {
+  background: rgba(255,255,255,0.04);
+  transform: translateY(-1px);
+}
+a.rates-board-row:hover .rates-cta {
+  background: var(--accent); color: #0F0F14;
+}
+.rates-board-row.head {
+  font-size: 13px; color: rgba(255,255,255,0.4);
   letter-spacing: 0.10em; text-transform: uppercase; font-weight: 600;
-  padding: 12px 0;
+  padding: 12px 8px;
+  font-family: var(--chn-font-sans);
+  border-bottom-color: rgba(255,255,255,0.14);
+}
+.rates-board-empty {
+  padding: 48px 8px; color: rgba(255,255,255,0.5); font-size: 16px;
   font-family: var(--chn-font-sans);
 }
-.rates-pair { display: flex; align-items: center; gap: 12px; }
-.rates-coin {
-  font-size: 16px; font-weight: 600; color: #fff;
-  letter-spacing: -0.005em;
+
+.rates-asset { display: flex; align-items: center; gap: 14px; }
+.rates-asset .coin { flex-shrink: 0; }
+.rates-asset-text { display: flex; flex-direction: column; gap: 2px; line-height: 1.2; }
+.rates-asset-ticker {
+  font-size: 17px; font-weight: 700; color: #fff;
+  letter-spacing: -0.01em;
 }
-.rates-arrow { color: rgba(255,255,255,0.35); }
-.rates-rate {
-  font-size: 16px; color: rgba(255,255,255,0.85);
+.rates-asset-name {
+  font-size: 13px; color: rgba(255,255,255,0.55);
+  font-family: var(--chn-font-sans); font-weight: 500;
+}
+.rates-price {
+  font-size: 17px; font-weight: 600; color: #fff;
   font-variant-numeric: tabular-nums;
 }
+.rates-price::before {
+  content: ""; /* keeps "$" visually anchored when price is right-aligned */
+}
 .rates-delta {
-  font-size: 16px; font-weight: 600;
+  font-size: 15px; font-weight: 600;
   font-variant-numeric: tabular-nums;
   display: inline-flex; align-items: center; gap: 4px;
 }
 .rates-delta.up { color: #4ED9A0; }
 .rates-delta.dn { color: #FF7A5C; }
-.rates-delta::before {
+.rates-delta.up::before {
   content: ""; width: 0; height: 0;
   border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-bottom: 5px solid #4ED9A0;
 }
-.rates-delta.up::before { border-bottom: 5px solid #4ED9A0; }
-.rates-delta.dn::before { border-top: 5px solid #FF7A5C; }
-.rates-liq {
-  display: flex; align-items: center;
+.rates-delta.dn::before {
+  content: ""; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid #FF7A5C;
 }
-.rates-liq-bar {
-  height: 4px; width: 100%;
-  background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;
-  display: block;
+
+.rates-spark-cell {
+  display: block; width: 100%; height: 36px;
 }
-.rates-liq-bar > span {
-  display: block; height: 100%;
-  background: linear-gradient(90deg, #4ED9A0 0%, #6BE0AE 100%);
-  border-radius: 999px;
-}
+.rates-spark { width: 100%; height: 100%; display: block; }
+
 .rates-cta {
   justify-self: end;
-  font-size: 16px; font-weight: 600;
+  font-size: 15px; font-weight: 700;
   color: #fff; text-decoration: none;
-  padding: 8px 16px; border-radius: 999px;
+  padding: 8px 18px; border-radius: 999px;
   background: rgba(255,255,255,0.08);
-  transition: background 150ms;
+  transition: background 150ms ease, color 150ms ease;
   font-family: var(--chn-font-sans);
 }
-.rates-cta:hover { background: rgba(255,255,255,0.16); }
+
+@media (max-width: 900px) {
+  .rates-board-row {
+    grid-template-columns: 1.6fr 1fr 80px;
+    gap: 12px;
+  }
+  .rates-board-row .rates-spark-cell,
+  .rates-board-row .rates-cta { display: none; }
+  .rates-board-row.head span:nth-child(n+4) { display: none; }
+}
 
 .rates-all {
   max-width: 1280px; margin: 40px auto 0;
@@ -3649,18 +3713,40 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   font-size: 72px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.0;
   margin: 0; color: var(--ink); max-width: 1000px;
 }
+.ps-lede {
+  font-size: 18px; line-height: 1.5; color: var(--ink-2);
+  margin: 24px 0 0; max-width: 640px;
+}
 .ps-grid {
   max-width: 1280px; margin: 0 auto;
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
 }
+@media (max-width: 900px) {
+  .ps-grid { grid-template-columns: 1fr; }
+}
 .ps-col {
   background: var(--paper); border-radius: 22px;
-  padding: 36px 32px;
+  padding: 32px 28px;
   box-shadow: 0 0 0 1px var(--line-soft);
   display: flex; flex-direction: column; gap: 0;
-  min-height: 320px;
+  min-height: 300px;
   position: relative;
+  transition: box-shadow 180ms ease, transform 180ms ease;
 }
+.ps-col:hover {
+  box-shadow: 0 0 0 1px var(--line), 0 14px 32px -16px rgba(15,15,20,0.18);
+  transform: translateY(-2px);
+}
+.ps-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 8px;
+}
+.ps-cta {
+  font-size: 15px; font-weight: 600; color: var(--ink);
+  text-decoration: none; white-space: nowrap;
+  transition: color 150ms ease;
+}
+.ps-cta:hover { color: var(--accent); }
 .ps-icon {
   width: 44px; height: 44px; border-radius: 12px;
   background: var(--paper-2);
@@ -3699,17 +3785,55 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
 }
 .apps-l {
   display: grid; place-items: center;
-}
-.apps-phone {
-  width: 320px; aspect-ratio: 320 / 640;
-  border-radius: 44px;
-  background: linear-gradient(160deg, #1B1A22 0%, #0E0E14 100%);
-  padding: 12px;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04) inset,
-    0 30px 80px -20px rgba(15,15,20,0.35),
-    0 12px 24px -8px rgba(15,15,20,0.20);
   position: relative;
+  min-height: 600px;
+}
+/* Two-phone composition built from the legacy app screenshots. The back
+   tile shows the wallet board (asset list + balance), the front tile shows
+   the swap quote — together they narrate "custody + swap in one app"
+   without copy. Soft glow lives behind both, real device frames come from
+   the source PNGs themselves. */
+.apps-phones {
+  position: relative;
+  width: 460px; max-width: 100%;
+  aspect-ratio: 460 / 560;
+  display: block;
+}
+.apps-phones::before {
+  content: ""; position: absolute; inset: 8% -4% 12% -4%;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(0, 194, 111, 0.18) 0%,
+    rgba(120, 90, 200, 0.14) 35%,
+    transparent 70%
+  );
+  filter: blur(40px); z-index: 0; pointer-events: none;
+}
+.apps-phone-back {
+  position: absolute; right: -2%; top: 0;
+  width: 80%; z-index: 1;
+  filter: drop-shadow(0 24px 60px rgba(15,15,20,0.25));
+}
+.apps-phone-back img {
+  width: 100%; height: auto; display: block;
+}
+.apps-phone-front {
+  position: absolute; left: 0; bottom: 0;
+  width: 56%; z-index: 2;
+  filter: drop-shadow(0 30px 70px rgba(15,15,20,0.35));
+}
+.apps-phone-front img {
+  width: 100%; height: auto; display: block;
+}
+@media (max-width: 900px) {
+  .apps-l { min-height: 480px; }
+  .apps-phones { width: 100%; max-width: 360px; }
+}
+/* Old fallback faux-phone — kept for legacy callers that still mount
+   `apps-phone-*` directly. Not used by the new homepage, retained only so
+   stray references don't crash. */
+.apps-phone {
+  display: none;
 }
 .apps-phone-screen {
   width: 100%; height: 100%; border-radius: 32px;
@@ -3750,6 +3874,25 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   color: rgba(255,255,255,0.85);
 }
 
+.apps-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--ink-2);
+  text-transform: uppercase; letter-spacing: 0.10em;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-soft);
+  margin-bottom: 20px;
+}
+.apps-eyebrow-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(0,194,111,0.6);
+  animation: pulse 1.8s infinite;
+}
+.apps-foot {
+  font-size: 14px; color: var(--ink-3); margin: 24px 0 0;
+  max-width: 540px; line-height: 1.5;
+}
+.apps-foot a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.apps-foot a:hover { color: var(--accent); }
 .apps-r h2 {
   font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
   margin: 0; color: var(--ink);
