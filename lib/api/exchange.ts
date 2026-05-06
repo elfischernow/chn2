@@ -185,7 +185,13 @@ export async function fetchEstimate(req: EstimateRequest): Promise<EstimateRespo
     throw { error: 'bad_request', message: 'toAmount required for reverse' };
   }
 
-  const upstream = buildUpstreamUrl('/v1.3/exchange/estimate', req);
+  // v1.7 is the current version the legacy SPA hits (see
+  // legacy-projects/changenow-frontend/src/react-ssr/api/modules/dashboard/
+  // use-dashboard-next-exchange-estimate.js). Same `{ summary, providers }`
+  // response envelope as v1.3 — we keep our normalize step intact and only
+  // bump the path. Promo / link / source / useRateId query params are still
+  // accepted, so the same `buildUpstreamUrl` shape works.
+  const upstream = buildUpstreamUrl('/v1.7/exchange/estimate', req);
   // Cashback is a separate endpoint that returns the value in NOW token.
   // Run in parallel with the estimate so the round-trip stays single-flight
   // from the calculator's perspective. Failures are non-fatal — the Pro
