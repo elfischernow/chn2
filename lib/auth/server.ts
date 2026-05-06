@@ -5,9 +5,9 @@ import { headers } from 'next/headers';
 
 import type { UserSession } from './dal';
 
-// Server-side `getSession()` for layouts and pages. Unlike the client DAL,
-// we cannot go through `/api/auth/users/me` (that's a same-origin URL with
-// no host) — we hit the upstream directly with the request's cookies.
+// Server-side `getSession()` for layouts and pages. Hits the upstream
+// directly with the request's cookies — same upstream the client DAL talks
+// to, just from the server side on first paint.
 //
 // The result is `react.cache`-d per render, so a layout, a server component,
 // and a page that all call `getSession()` cost one upstream round-trip.
