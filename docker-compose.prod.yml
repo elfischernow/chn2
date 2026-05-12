@@ -1,0 +1,49 @@
+# Production-mode compose, only for testing the prod build locally — the
+# real prod deploys via k8s/Nomad through `build.groovy`. Builds the
+# multi-stage `Dockerfile` (next build → standalone runner) and serves on
+# port 3002 so it doesn't collide with the dev server on 3000/3001.
+#
+# Usage:
+#   export $(grep -E '^(CI_SERVER_HOST|CI_JOB_TOKEN|CONTENT_API_BASEURL)=' .docker-prod.env | xargs)
+#   docker compose -f docker-compose.prod.yml up --build
+#
+# Or in one step:
+#   docker compose -f docker-compose.prod.yml --env-file .docker-prod.env up --build
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --save 60 1
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-prod-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CI_SERVER_HOST: ${CI_SERVER_HOST}
+        CI_JOB_TOKEN: ${CI_JOB_TOKEN}
+        CONTENT_API_BASEURL: ${CONTENT_API_BASEURL}
+    env_file:
+      - .env.local
+    environment:
+      # Point the app at the compose redis, not whatever the dev host has.
+      REDIS_URL: redis://redis:6379
+      # Keep telemetry off when iterating.
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3002:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-prod-data:
