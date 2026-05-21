@@ -565,6 +565,15 @@ export async function createTransaction(
 export function buildExchangeUrl(args: {
   from: string;
   to: string;
+  /** Network of the FROM asset — disambiguates multi-chain tickers
+   *  (USDT-TRX vs USDT-ETH, ETH on Base vs L1) when the target is our
+   *  in-house /exchange page (see `resolveCurrencyByParam` consumers in
+   *  `app/[lang]/exchange/page.tsx`). Lowercased on the way out so the
+   *  emitted URL matches the rest of the param contract. Legacy SPA
+   *  ignores this; safe to send regardless. */
+  fromNetwork?: string;
+  /** Network of the TO asset — same contract as `fromNetwork`. */
+  toNetwork?: string;
   amount?: string | number;
   /** Reverse mode: encodes `&amountTo=…`. Auto-promotes to fixed-rate when
    *  this is present (matching the "I want X TO" intent flow). Wins over
@@ -585,6 +594,8 @@ export function buildExchangeUrl(args: {
     from: args.from.toLowerCase(),
     to: args.to.toLowerCase(),
   });
+  if (args.fromNetwork) qs.set('fromNetwork', args.fromNetwork.toLowerCase());
+  if (args.toNetwork) qs.set('toNetwork', args.toNetwork.toLowerCase());
   if (args.toAmount != null && args.toAmount !== '') qs.set('amountTo', String(args.toAmount));
   else if (args.amount != null && args.amount !== '') qs.set('amount', String(args.amount));
   if (args.flow === 'fixed-rate') qs.set('rateMode', 'fixed');

@@ -146,7 +146,6 @@ export function PhoneCalculator({ currencies }: Props) {
     toNetwork,
     amount: fromAmount,
     flow,
-    type: direction,
   });
 
   return (
