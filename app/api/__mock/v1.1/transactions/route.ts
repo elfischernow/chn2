@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { gateMocks, readState } from '../../../_shared';
+import { gateMocks, readState } from '../../_shared';
 
 export const dynamic = 'force-dynamic';
 
