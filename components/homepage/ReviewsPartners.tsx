@@ -1,5 +1,5 @@
 import { getB2CReviews, pickRotatedB2B, type B2CReview } from '@/lib/api/reviews';
-import { BUSINESS, REVIEWS as REVIEW_LINKS } from '@/lib/links';
+import { BUSINESS, CN_SITE_URL, REVIEWS as REVIEW_LINKS } from '@/lib/links';
 
 import { PartnersCarousel } from './PartnersCarousel';
 
@@ -25,6 +25,34 @@ function FiveStars() {
     <div className="rp-stars" aria-label="5 out of 5 stars">
       {'★★★★★'}
     </div>
+  );
+}
+
+function PartnerSparkIcon() {
+  return (
+    <span className="rp-cta-icon" aria-hidden>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path
+          d="M14 3.5l2.7 6.55a4.5 4.5 0 0 0 2.45 2.45L25.7 15.2a.5.5 0 0 1 0 .9l-6.55 2.7a4.5 4.5 0 0 0-2.45 2.45L14 27.8a.5.5 0 0 1-.9 0l-2.7-6.55a4.5 4.5 0 0 0-2.45-2.45L1.4 16.1a.5.5 0 0 1 0-.9l6.55-2.7a4.5 4.5 0 0 0 2.45-2.45L13.1 3.5a.5.5 0 0 1 .9 0z"
+          fill="url(#rp-cta-spark)"
+        />
+        <defs>
+          <linearGradient id="rp-cta-spark" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#4EA1F5" />
+            <stop offset="0.5" stopColor="#5BC0DE" />
+            <stop offset="1" stopColor="#76EAB1" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </span>
+  );
+}
+
+function ArrowGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -120,11 +148,28 @@ export async function ReviewsPartners() {
       </div>
 
       <div className="rp-cta">
-        <div>
-          <div className="rp-cta-eyebrow">Building something with crypto?</div>
-          <div className="rp-cta-h">Become a partner.</div>
+        {/* Whole banner is the primary CTA — the overlay link covers the
+            entire surface so any click lands on "Talk to BD". The secondary
+            "Sign in to B2B" link sits above it via z-index. */}
+        <a className="rp-cta-link" href={BUSINESS.contactBd} aria-label="Become a partner — talk to BD" />
+        <span className="rp-cta-glow" aria-hidden />
+        <div className="rp-cta-text">
+          <PartnerSparkIcon />
+          <div>
+            <div className="rp-cta-eyebrow">Building something with crypto?</div>
+            <div className="rp-cta-h">Become a partner.</div>
+          </div>
         </div>
-        <a className="btn btn-dark btn-lg" href={BUSINESS.contactBd}>Talk to BD →</a>
+        <div className="rp-cta-actions">
+          {/* Secondary outbound — sends existing affiliates straight to the
+              B2B cabinet at `${CN_SITE_URL}/affiliate`. Same destination the
+              header's business-mode auth buttons resolve to in
+              `Header.tsx:160`. */}
+          <a className="rp-cta-login" href={`${CN_SITE_URL}/affiliate`}>
+            Sign in to B2B
+            <ArrowGlyph />
+          </a>
+        </div>
       </div>
     </section>
   );

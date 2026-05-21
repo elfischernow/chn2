@@ -1,5 +1,7 @@
 'use client';
 
+import type { Ref } from 'react';
+
 import { Coin } from '../../Coin';
 
 interface CoinTriggerProps {
@@ -18,6 +20,8 @@ interface CoinTriggerProps {
   ariaLabel?: string;
   ariaControls?: string;
   onClick?: () => void;
+  /** Forwarded so `<Overlay>` can anchor the floating panel to this button. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -39,9 +43,11 @@ export function CoinTrigger({
   ariaLabel,
   ariaControls,
   onClick,
+  ref,
 }: CoinTriggerProps) {
   return (
     <button
+      ref={ref}
       type="button"
       className="coin-trigger"
       data-open={open || undefined}
