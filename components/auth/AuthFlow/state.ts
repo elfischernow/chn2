@@ -16,6 +16,13 @@ import type { Dispatch } from 'react';
 import type { PasswordError, RepeatedPasswordError, VerificationCodeError } from '@/lib/auth/validation';
 
 export type FormName =
+  // Unified single-input entry (default). Submits as signin; on
+  // INVALID_CREDENTIALS the same form flips into "we'll create an account"
+  // mode — see `entryMode` below + EntryForm component.
+  | 'entry'
+  // Legacy LOGIN/REGISTER views — kept for back-compat with `?form=` deep
+  // links and embedded modals; on the standalone page they normalize to
+  // `entry` (see AuthFlow.tsx FORM_QUERY_TO_NAME).
   | 'login'
   | 'register'
   | 'register-success'
@@ -95,6 +102,18 @@ export interface AuthFormState {
 
   /** `?resetToken=` query — required by PUT /v1.1/auth/reset-password. */
   resetToken: string | null;
+
+  /**
+   * Unified entry-form behaviour:
+   *   - 'fresh'           → CTA reads "Continue"; submit tries signin first.
+   *   - 'suggest-signup'  → backend returned INVALID_CREDENTIALS for this
+   *                         email, CTA flips to "Create account", the
+   *                         agreement+newsletter block becomes visible, and
+   *                         submit calls signup with the same email+password.
+   * `fresh` is the default. After a successful login or after editing the
+   * email/password the entry resets back to `fresh`.
+   */
+  entryMode: 'fresh' | 'suggest-signup';
 }
 
 export type AuthFormAction =
@@ -136,7 +155,8 @@ export type AuthFormAction =
   | { type: 'SET_TIMER'; seconds: number | null }
   | { type: 'SET_FETCHING'; value: boolean }
   | { type: 'CLEAR_PASSWORDS' }
-  | { type: 'CLEAR_FORM' };
+  | { type: 'CLEAR_FORM' }
+  | { type: 'SET_ENTRY_MODE'; mode: 'fresh' | 'suggest-signup' };
 
 export type AuthDispatch = Dispatch<AuthFormAction>;
 
@@ -182,7 +202,7 @@ const codeErrorToText = (err: VerificationCodeError): string | null => {
 };
 
 export const initialState: AuthFormState = {
-  currentForm: 'login',
+  currentForm: 'entry',
   prevForm: null,
 
   email: '',
@@ -227,6 +247,8 @@ export const initialState: AuthFormState = {
   isFetching: false,
 
   resetToken: null,
+
+  entryMode: 'fresh',
 };
 
 export function reducer(state: AuthFormState, action: AuthFormAction): AuthFormState {
@@ -246,9 +268,11 @@ export function reducer(state: AuthFormState, action: AuthFormAction): AuthFormS
         email: action.value,
         isEmailValid: action.isValid,
         emailError: null,
-        // Legacy: if value cleared, also clear the error state. If value
-        // present but invalid, keep flagging as invalid (no inline message
-        // until submit).
+        // If the user edits the email after we suggested signup, treat it
+        // as a fresh entry — the previous "no account" verdict was for a
+        // different address.
+        entryMode:
+          state.entryMode === 'suggest-signup' ? 'fresh' : state.entryMode,
       };
     case 'CLEAR_EMAIL_ERROR':
       return { ...state, emailError: null };
@@ -404,7 +428,11 @@ export function reducer(state: AuthFormState, action: AuthFormAction): AuthFormS
         isLinkOauth: false,
         isAgreementError: false,
         isCaptureNotCompleteError: false,
+        entryMode: 'fresh',
       };
+
+    case 'SET_ENTRY_MODE':
+      return { ...state, entryMode: action.mode };
 
     default:
       return state;

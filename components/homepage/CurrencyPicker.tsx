@@ -15,6 +15,7 @@ import type { Currency } from '@/lib/api/currencies';
 import { groupCurrencies, searchRows, type CurrencyRow } from '@/lib/currencies/group';
 import { buildSearchIndex, searchCurrencies } from '@/lib/currencies/search';
 import { getNetworkColor, getNetworkInk } from '@/lib/network-colors';
+import { Overlay } from '@/components/ui/Overlay';
 
 import { Coin } from './Coin';
 import { CoinTrigger } from './calculator/shared/CoinTrigger';
@@ -47,6 +48,13 @@ interface CurrencyPickerProps {
   showLock?: boolean;
   /** When true, surface fiats only. */
   fiatOnly?: boolean;
+  /**
+   * Paired-ticker hint. Used by `BridgeCurrencyPicker` to auto-select the
+   * same ticker on chain change; the standard picker ignores it. Lives on
+   * the shared interface so `SwapView` can pass it uniformly regardless of
+   * which picker variant is mounted.
+   */
+  pairedTicker?: string;
   /**
    * The amount input + skeleton, rendered in the picker's left slot when
    * closed. Lifting it into the picker lets the open-state search bar slide
@@ -96,8 +104,17 @@ export function CurrencyPicker({
     budget: INITIAL_ROW_BUDGET,
   });
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // `triggerRef` is the anchor `<Overlay>` aligns the floating panel to;
+  // the picker still owns markup and click handling on the trigger button,
+  // so we pass the ref via `anchorRef` rather than wrapping it as a
+  // controlled trigger child. The on-page shell stays for the slide-in
+  // search animation.
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Mobile fullscreen renders its own search inside the overlay panel
+  // (the in-shell input is hidden behind the sheet), so we need a second
+  // ref to focus on open.
+  const mobileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<Array<HTMLLIElement | null>>([]);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
 
@@ -221,29 +238,18 @@ export function CurrencyPicker({
     itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  // Auto-focus the search input the moment the picker opens.
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-
-  // Close on outside click / touch.
+  // Auto-focus the search input the moment the picker opens. The mobile
+  // input wins when present (its `<input>` lives inside the overlay panel,
+  // so it's the one the user actually sees on fullscreen sheets).
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery('');
-        setActiveIndex(null);
-      }
-    };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('touchstart', onDown);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('touchstart', onDown);
-    };
+    const target = mobileInputRef.current ?? inputRef.current;
+    target?.focus();
   }, [open]);
+
+  // Outside-click + Esc dismissal are handled by `<Overlay>` (Floating UI's
+  // `useDismiss`). The shell trigger itself is part of the floating
+  // reference, so toggling it doesn't fire an outside-press.
 
   const moveActive = (dir: 1 | -1) => {
     setActiveIndex((prev) => {
@@ -262,6 +268,10 @@ export function CurrencyPicker({
     setOpen(false);
     setQuery('');
     setActiveIndex(null);
+  };
+
+  const onOverlayOpenChange = (next: boolean) => {
+    if (!next) closePopover();
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -339,7 +349,7 @@ export function CurrencyPicker({
       : null;
 
   return (
-    <div className="cur" data-open={open || undefined} ref={containerRef}>
+    <div className="cur" data-open={open || undefined}>
       <div className="cur-shell">
         {/* Amount slot — visible when closed. Fades out when the picker
             opens; the search bar slides in over the same grid cell. */}
@@ -391,6 +401,7 @@ export function CurrencyPicker({
             future modes (private, bridge, …) can swap the visual without
             cloning the picker shell. */}
         <CoinTrigger
+          ref={triggerRef}
           ticker={triggerLabel}
           iconUrl={triggerIconUrl}
           chainBadge={triggerChainBadge}
@@ -401,7 +412,55 @@ export function CurrencyPicker({
         />
       </div>
 
-      {open && (
+      <Overlay
+        open={open}
+        onOpenChange={onOverlayOpenChange}
+        mode="popover"
+        anchorRef={triggerRef}
+        ariaLabel={ariaLabel ?? 'Currency'}
+        className="cur-overlay"
+      >
+        {/* Mobile-only search input. Shown when the overlay renders as a
+            fullscreen sheet — the in-shell `.cur-search-input` is hidden
+            behind the sheet, so without this the user couldn't filter on a
+            phone. CSS gates visibility to `.overlay-panel-fullscreen` to
+            avoid duplicating the input on desktop. */}
+        <div className="cur-mobile-search">
+          <svg
+            className="cur-search-icon"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            ref={mobileInputRef}
+            className="cur-search-input"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Search by name, ticker, or network"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Search currencies"
+          />
+          <button
+            type="button"
+            className="cur-mobile-close"
+            aria-label="Close"
+            onClick={closePopover}
+          >
+            {'×'}
+          </button>
+        </div>
         <ul
           id={listboxId}
           className="cur-list"
@@ -486,7 +545,7 @@ export function CurrencyPicker({
             </>
           )}
         </ul>
-      )}
+      </Overlay>
     </div>
   );
 }

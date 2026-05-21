@@ -9,6 +9,11 @@ interface FeesPillProps {
    *  misleading and the prop is omitted. `amount === null` renders the
    *  row with `—` (estimate not yet loaded). */
   networkFee?: { amount: number | null; ticker: string };
+  /** Active promo-code discount percent (e.g. `50`). When set the pill
+   *  swaps its "Fees included" copy for "{X}% Promo applied" and gets
+   *  the brand promo gradient — mirrors the legacy `gradientButtonText`
+   *  treatment but inlined on the pill itself. */
+  promoPercent?: number | null;
 }
 
 /**
@@ -16,11 +21,25 @@ interface FeesPillProps {
  * focus reveals a breakdown tooltip — network fee (where applicable),
  * service fee, spread/slippage. Visual chrome only; the actual fee
  * numbers come from the upstream estimate, computed by the caller.
+ *
+ * When `promoPercent` is set the pill flips into the "promo applied"
+ * state: the label changes to "{X}% Promo applied", the icon switches
+ * to the promo tag, and the tooltip surfaces the discount as the headline.
  */
-export function FeesPill({ networkFee }: FeesPillProps) {
+export function FeesPill({ networkFee, promoPercent = null }: FeesPillProps) {
+  const isPromo = promoPercent != null && promoPercent > 0;
   return (
-    <span className="fees-pill" tabIndex={0} aria-label="Fees included details">
-      <span>Fees included</span>
+    <span
+      className="fees-pill"
+      data-promo={isPromo || undefined}
+      tabIndex={0}
+      aria-label={
+        isPromo ? `${promoPercent}% promo applied` : 'Fees included details'
+      }
+    >
+      <span>
+        {isPromo ? `${promoPercent}% Promo applied` : 'Fees included'}
+      </span>
       <svg
         width="11"
         height="11"
@@ -37,7 +56,15 @@ export function FeesPill({ networkFee }: FeesPillProps) {
         <path d="M12 8h.01" />
       </svg>
       <span className="fees-tip" role="tooltip">
-        <span className="fees-tip-title">No hidden fees</span>
+        <span className="fees-tip-title">
+          {isPromo ? 'Promo discount applied' : 'No hidden fees'}
+        </span>
+        {isPromo && (
+          <span className="fees-tip-row">
+            <span>Promo discount</span>
+            <span>{promoPercent}%</span>
+          </span>
+        )}
         {networkFee && (
           <span className="fees-tip-row">
             <span>Network fee</span>
@@ -57,7 +84,9 @@ export function FeesPill({ networkFee }: FeesPillProps) {
           <span>built-in</span>
         </span>
         <span className="fees-tip-foot">
-          All fees are baked into the rate you see — what you get is what you get.
+          {isPromo
+            ? 'Your promo code discount is already reflected in the receive amount.'
+            : 'All fees are baked into the rate you see — what you get is what you get.'}
         </span>
       </span>
     </span>

@@ -149,7 +149,7 @@ export function WalletConnectModal({
             src="/images/loader.gif"
             alt="loader"
           />
-          Pending
+          {t('AUTHORIZATION.WALLET_CONNECT.PENDING', 'Pending')}
         </div>
       )}
       {currentError && (

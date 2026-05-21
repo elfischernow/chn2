@@ -18,9 +18,9 @@
 // Anything that needs different semantics (e.g. retry, dedupe) layers on top
 // of these primitives — they stay dumb and predictable.
 
-import { VIP_API_BASE } from '../config';
+import { AUTH_API_BASE } from '../config';
 
-const API_BASE = VIP_API_BASE;
+const API_BASE = AUTH_API_BASE;
 
 export interface DalResult<T = unknown> {
   status: number;
@@ -208,15 +208,23 @@ export interface ChangePasswordParams {
   oldPassword: string;
   code?: string;
   captcha?: string;
+  /** From `cn_csrf` cookie; required by CsrfGuard on `/v2.0/users/password/web`. */
+  csrfToken?: string;
 }
-export const changePassword = (params: ChangePasswordParams) =>
-  request('users/change-password', { method: 'POST', body: params });
+export const changePassword = ({ csrfToken, ...body }: ChangePasswordParams) =>
+  request('v2.0/users/password/web', {
+    method: 'PUT',
+    body,
+    headers: csrfToken ? { 'x-xsrf-token': csrfToken } : {},
+  });
 
-// Email verification / resend. Two endpoints — legacy uses different ones
-// for the `EmailConfirmation` flow (v1) vs the `RESEND_EMAIL` button on
-// registration success (`/email-verification/resend`).
+// Email verification / resend. Two endpoints — used for different flows:
+//   - `/email-verification/resend` (no version) for the post-signup
+//     "check your email" view.
+//   - `/v1/email-verification/resend-otp` for the device-confirm OTP code
+//     during `EmailConfirmation` (throttled 1/60s server-side).
 export const emailResendV1 = (email: string) =>
-  request('v1/email-resend', { method: 'POST', body: { email } });
+  request(`v1/email-verification/resend-otp?email=${encodeURIComponent(email)}`);
 
 export const emailVerificationResend = (email: string) =>
   request(`email-verification/resend?email=${encodeURIComponent(email)}`);
@@ -302,13 +310,53 @@ export const getMe = async (signal?: AbortSignal): Promise<DalResult<UserSession
   return { ...r, data: mapMe(r.data) };
 };
 
+// ─── Refresh + logout ──────────────────────────────────────────────────────
+//
+// Both ride the cookie-bound `/web` variants — upstream reads `cn_rt` from
+// the cookie jar, validates, rotates, and writes the new pair back via
+// `Set-Cookie`. We send no body. The non-`/web` siblings (`auth/refresh`,
+// `auth/logout`) expect a body-borne `refreshToken` (legacy mobile SDK
+// contract) and would silently fail for a cookie-only browser session.
+
+export const refresh = (): Promise<DalResult> =>
+  request('v2.0/auth/refresh/web', { method: 'POST' });
+
+export const logout = (): Promise<DalResult> =>
+  request('v2.0/auth/logout/web', { method: 'POST' });
+
+/**
+ * `getMe` with a single refresh-retry. If the first call comes back 401,
+ * we hit `auth/refresh`; on success we retry `getMe` once. If either the
+ * refresh or the retry fails, we propagate the original 401 result so the
+ * caller falls back to the unauthenticated view.
+ */
+export const getMeWithRefresh = async (
+  signal?: AbortSignal,
+): Promise<DalResult<UserSession>> => {
+  const first = await getMe(signal);
+  if (!first.isError) return first;
+  if (first.status !== 401) return first;
+
+  const refreshed = await refresh();
+  if (refreshed.isError) return first;
+
+  const second = await getMe(signal);
+  return second;
+};
+
 // ─── Wallet flows (Metamask + WalletConnect) ───────────────────────────────
+//
+// The nonce endpoint is unauthenticated. The two `confirm*/web` variants
+// drop session cookies on 204 and are the only login-style ones this app
+// uses. `set-up-wallet*` are Bearer-guarded (legacy mobile flow) — they
+// won't work from a cookie-only browser session until backend swaps the
+// guard, so we keep the URLs correct but leave the UX gated upstream.
 
 export interface MetamaskNonceResponse {
   secret?: string;
 }
 export const metamaskRequest = (address: string) =>
-  request<MetamaskNonceResponse>('metamask/request', {
+  request<MetamaskNonceResponse>('v1/auth/metamask/request', {
     method: 'POST',
     body: { address },
   });
@@ -321,13 +369,13 @@ interface MetamaskConfirmCommon {
   landingPage?: string;
 }
 export const metamaskConfirm = (params: MetamaskConfirmCommon) =>
-  request('metamask/confirm', { method: 'POST', body: params });
+  request('v2.0/auth/metamask/confirm/web', { method: 'POST', body: params });
 
 export const metamaskConfirmPersonal = (params: MetamaskConfirmCommon) =>
-  request('metamask/confirm-personal', { method: 'POST', body: params });
+  request('v2.0/auth/metamask/confirm-personal/web', { method: 'POST', body: params });
 
 export const metamaskSetUpWallet = (params: MetamaskConfirmCommon) =>
-  request('metamask/set-up-wallet', { method: 'POST', body: params });
+  request('v1/auth/metamask/set-up-wallet', { method: 'POST', body: params });
 
 export const metamaskSetUpWalletPersonal = (params: MetamaskConfirmCommon) =>
-  request('metamask/set-up-wallet-personal', { method: 'POST', body: params });
+  request('v1/auth/metamask/set-up-wallet-personal', { method: 'POST', body: params });

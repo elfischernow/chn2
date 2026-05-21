@@ -99,6 +99,32 @@ export interface Currency {
    * checks `length > 0`.
    */
   hasExceptions: boolean;
+  /**
+   * Privacy-coin / mixer flag. True when the upstream marks the row
+   * `is_anonymous` (XMR, ZEC shielded, mixers). When this currency is on
+   * the FROM side, /exchange forces a refund-address field — there's no
+   * way to refund automatically because the deposit chain doesn't expose
+   * a sender. Mirrors legacy's `getIsCurrencyFromAnonymous`.
+   */
+  isAnonymous: boolean;
+  /**
+   * Per-row admin warning shown when this currency is selected as TO
+   * (e.g. "Tag is required" reminders, deprecation notices, listing
+   * caveats). `null` when upstream omits one. Legacy renders it inline
+   * above the recipient field on `/exchange`.
+   */
+  warningTo: string | null;
+  /**
+   * Live USD spot from the catalog (`price` + `price_currency` upstream;
+   * we only surface it when `price_currency === 'usd'`). Used by the
+   * homepage Featured block to render real RWA / spot prices without
+   * issuing a second roundtrip — the calculator already fetches this
+   * row. `null` when upstream omits the price or quotes in a non-USD
+   * currency (rare; mainly small fiat-routed rows).
+   */
+  priceUsd: number | null;
+  /** Signed 24h change in percent, from upstream `percent_change_24h`. */
+  percentChange24h: number | null;
 }
 
 interface UpstreamCurrency {
@@ -129,6 +155,11 @@ interface UpstreamCurrency {
   is_unpopular?: unknown;
   redirect_to?: unknown;
   exceptions_list?: unknown;
+  is_anonymous?: unknown;
+  warning_to?: unknown;
+  price?: unknown;
+  price_currency?: unknown;
+  percent_change_24h?: unknown;
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -184,6 +215,22 @@ const normalize = (raw: UpstreamCurrency, host: string): Currency | null => {
     isUnpopular: bool(raw.is_unpopular),
     redirectToId: typeof raw.redirect_to === 'number' && raw.redirect_to > 0 ? raw.redirect_to : null,
     hasExceptions: Array.isArray(raw.exceptions_list) && raw.exceptions_list.length > 0,
+    isAnonymous: bool(raw.is_anonymous),
+    warningTo: raw.warning_to && str(raw.warning_to) ? str(raw.warning_to) : null,
+    priceUsd: (() => {
+      // `price_currency` is usually `'usd'` but a handful of rows quote in
+      // their native fiat; we only trust USD here because every downstream
+      // (Featured RWA card, /currencies tables) renders dollars.
+      if (str(raw.price_currency).toLowerCase() !== 'usd') return null;
+      const p = num(raw.price);
+      return p > 0 ? p : null;
+    })(),
+    percentChange24h: (() => {
+      const c = raw.percent_change_24h;
+      if (c == null) return null;
+      const n = num(c);
+      return Number.isFinite(n) ? n : null;
+    })(),
   };
 };
 
@@ -244,7 +291,7 @@ async function fetchCurrencies(): Promise<Currency[]> {
  * the catalog changes when listings are added/removed, which is infrequent,
  * and the picker doesn't need real-time freshness.
  */
-export const getCurrencies = unstable_cache(fetchCurrencies, ['currencies-light-v5-hasexceptions'], {
+export const getCurrencies = unstable_cache(fetchCurrencies, ['currencies-light-v7-price'], {
   revalidate: CACHE_MEDIUM,
   tags: ['currencies'],
 });

@@ -1,5 +1,5 @@
 import { getLatestNewsForCoin } from '@/lib/api/content/blog-posts';
-import { SITE_URL } from '@/lib/config';
+import { CN_SITE_URL } from '@/lib/config';
 import { createT } from '@/lib/i18n/createT';
 
 import styles from './blocks.module.css';
@@ -30,7 +30,7 @@ export async function LatestNews({ block, page, dict }: BlockProps) {
           <a
             key={p.id}
             className={styles.newsCard}
-            href={`${SITE_URL}/blog/${p.slug}`}
+            href={`${CN_SITE_URL}/blog/${p.slug}`}
             rel="noopener"
           >
             {p.image && (

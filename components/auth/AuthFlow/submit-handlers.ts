@@ -34,6 +34,7 @@ import { USERS_ERRORS } from '@/lib/auth/constants';
 import { mapAuthError } from '@/lib/auth/error-mapper';
 import { getLandingPage } from '@/lib/auth/landing-page';
 import { getUtms } from '@/lib/auth/utm';
+import { clearResendBuckets } from '@/lib/auth/use-resend-timeout';
 import {
   isPasswordValid as validatePasswordOk,
   validatePassword,
@@ -212,6 +213,27 @@ export async function performLoginSubmit(deps: SubmitDeps): Promise<void> {
       return;
     }
 
+    // Unified entry-form: INVALID_CREDENTIALS doesn't necessarily mean
+    // "wrong password" — it could also mean "no such account". The backend
+    // collapses both for enumeration safety, so we flip the form into
+    // "suggest signup" mode and let the user confirm before we register
+    // them. The legacy LoginForm (`?form=login` deep-link, embedded modal)
+    // keeps the previous "ACCOUNT_NOT_FOUND" inline error.
+    if (
+      message === AUTH_ERRORS.INVALID_CREDENTIALS &&
+      state.currentForm === 'entry' &&
+      state.entryMode === 'fresh'
+    ) {
+      dispatch({ type: 'SET_ENTRY_MODE', mode: 'suggest-signup' });
+      dispatch({ type: 'CLEAR_PASSWORD_ERROR' });
+      track({
+        category: 'error',
+        action: AUTHORIZATION_ERRORS.SIGN_IN.INVALID_CREDENTIALS,
+        label: `status: ${status}, error: ${message} (suggest-signup)`,
+      });
+      return;
+    }
+
     // Fall through to the error mapper. Anything we know goes to the right
     // field; unknown messages bubble up as a generic SERVER_ERROR + Sentry.
     const mapped = mapAuthError('login', message);
@@ -233,9 +255,20 @@ export async function performLoginSubmit(deps: SubmitDeps): Promise<void> {
     return;
   }
 
-  // Success path. Empty 200/204 ⇒ legitimate success (E19 — not a
-  // connection error like legacy briefly read it). Telemetry + redirect.
+  // 2xx response. `/v2.0/auth/signin/web` returns 200 + `{ code: '2FA_CODE_NEEDED' }`
+  // (plus a first-step access cookie) when the account has 2FA enabled, and
+  // 204 + full cookies on outright success. We must check the body BEFORE
+  // signalling success — otherwise a 2FA user gets redirected to /pro/balance
+  // with a half-authenticated cookie that fails every subsequent request.
+  if (extractCode(result.data) === AUTH_ERRORS.FA_CODE_NEEDED) {
+    dispatch({ type: 'RESET_CAPTCHA' });
+    dispatch({ type: 'SET_FORM', form: 'security-verification', remember: true });
+    return;
+  }
+  // Empty 200/204 ⇒ legitimate success (E19 — not a connection error like
+  // legacy briefly read it). Telemetry + redirect.
   track({ category: 'login', action: 'login' });
+  clearResendBuckets('login-confirm', 'signup-confirm', 'register-confirm');
   onSuccess();
 }
 
@@ -361,6 +394,125 @@ export async function performRegisterSubmit(deps: SubmitDeps): Promise<void> {
   // CODE_NEEDED on signup (kicking the user into device-confirm). We surface
   // an explicit "check email" success state in case the server returns a
   // bare 200/204 — fixes edge case E2.
+  track({ category: 'user-engagement', action: 'reg-success' });
+  dispatch({ type: 'SET_FORM', form: 'register-success', remember: true });
+  dispatch({ type: 'SET_TIMER', seconds: 60 });
+  onSuccess();
+}
+
+// ─── entry signup submit ─────────────────────────────────────────────────
+//
+// Variant of `performRegisterSubmit` that fires from the unified entry form
+// (one password field, no repeated input). Triggered only after a signin
+// probe returned INVALID_CREDENTIALS and the user confirmed "Create
+// account". On EMAIL_ALREADY_EXIST the backend has changed its mind (rare
+// race) — drop back to fresh-entry with a password error so the user can
+// re-try as a returning customer instead of being silently stuck.
+
+export async function performEntrySignup(deps: SubmitDeps): Promise<void> {
+  const { state, dispatch, obtainCaptcha, resetCaptcha, track, reportError, onSuccess } =
+    deps;
+
+  let invalid = false;
+  if (!state.email) {
+    dispatch({ type: 'SET_EMAIL_ERROR', error: 'AUTHORIZATION.EMAIL.EMPTY' });
+    invalid = true;
+  } else if (!state.isEmailValid) {
+    dispatch({ type: 'SET_EMAIL_ERROR', error: 'AUTHORIZATION.EMAIL.INVALID_EMAIL' });
+    invalid = true;
+  }
+  const passwordError = validatePassword(state.password);
+  if (passwordError) {
+    invalid = true;
+  }
+  if (!state.isAgreementChecked) {
+    dispatch({ type: 'SET_AGREEMENT_ERROR', error: true });
+    invalid = true;
+  }
+  if (invalid) return;
+
+  let captcha = state.captcha;
+  if (!captcha && state.recaptureShown) {
+    try {
+      captcha = await obtainCaptcha();
+    } catch {
+      dispatch({ type: 'SET_CAPTURE_NOT_COMPLETE' });
+      return;
+    }
+  }
+
+  dispatch({ type: 'SET_FETCHING', value: true });
+  const result = await signup({
+    email: normalizeEmail(state.email),
+    password: state.password,
+    subscribeToNewsletter: state.isSubscribeToNewsletterChecked,
+    captcha: captcha || undefined,
+    utmData: { ...getUtms() },
+    landingPage: getLandingPage(),
+  });
+  dispatch({ type: 'SET_FETCHING', value: false });
+
+  if (result.isError) {
+    const errorData = (result.data as { errorData?: unknown }).errorData;
+    const status = extractStatus(result.data);
+    if (errorData === null) {
+      dispatch({ type: 'SET_FORM', form: 'connection-error', remember: true });
+      reportError({
+        error: new Error('Connection error'),
+        type: SENTRY_ERRORS_TYPES.REGISTER_ERROR,
+        status,
+        errorMessage: 'Connection error',
+      });
+      return;
+    }
+    const message = extractErrorMessage(result.data);
+
+    if (message === AUTH_ERRORS.CAPTCHA_NEEDED) {
+      dispatch({ type: 'SHOW_RECAPTURE' });
+      resetCaptcha();
+      return;
+    }
+    if (message === AUTH_ERRORS.CODE_NEEDED) {
+      dispatch({ type: 'SET_CONFIRM_DEVICE', value: true });
+      dispatch({ type: 'SET_FORM', form: 'security-verification', remember: true });
+      return;
+    }
+    // Race: signin said "no account", but signup now reports the email is
+    // taken. Flip back to fresh entry and surface the typo-friendly error.
+    if (
+      message === 'AUTHORIZATION.EMAIL.EMAIL_ALREADY_EXIST' ||
+      message === 'AUTH.EMAIL.EMAIL_ALREADY_EXIST'
+    ) {
+      dispatch({ type: 'SET_ENTRY_MODE', mode: 'fresh' });
+      dispatch({
+        type: 'SET_PASSWORD_ERROR',
+        error: 'AUTHORIZATION.ACCOUNT_NOT_FOUND',
+      });
+      return;
+    }
+
+    const mapped = mapAuthError('register', message);
+    if (mapped.field === 'email') {
+      dispatch({ type: 'SET_EMAIL_ERROR', error: mapped.i18nKey });
+    } else {
+      dispatch({ type: 'SET_OAUTH_ERROR', error: mapped.i18nKey });
+    }
+    if (mapped.unknown) {
+      reportError({
+        error: new Error(message ?? 'unknown'),
+        type: SENTRY_ERRORS_TYPES.REGISTER_ERROR,
+        status,
+        errorMessage: message ?? 'unknown',
+      });
+    }
+    track({
+      category: 'error',
+      action: AUTHORIZATION_ERRORS.SIGN_UP.SOMETHING_ERROR,
+      label: `status: ${status}, error: ${message}`,
+    });
+    return;
+  }
+
   track({ category: 'user-engagement', action: 'reg-success' });
   dispatch({ type: 'SET_FORM', form: 'register-success', remember: true });
   dispatch({ type: 'SET_TIMER', seconds: 60 });
@@ -604,6 +756,7 @@ export async function performAuthenticateSubmit(deps: AuthenticateDeps): Promise
       return;
     }
     track({ category: 'login', action: 'login' });
+    clearResendBuckets('login-confirm', 'signup-confirm', 'register-confirm');
     onSuccess();
     return;
   }
@@ -649,6 +802,7 @@ export async function performAuthenticateSubmit(deps: AuthenticateDeps): Promise
       return;
     }
     track({ category: 'login', action: 'login' });
+    clearResendBuckets('login-confirm', 'signup-confirm', 'register-confirm');
     onSuccess();
     return;
   }
@@ -707,6 +861,7 @@ export async function performAuthenticateSubmit(deps: AuthenticateDeps): Promise
   }
 
   track({ category: 'login', action: 'login' });
+  clearResendBuckets('login-confirm', 'signup-confirm', 'register-confirm');
   onSuccess();
 }
 
@@ -746,51 +901,57 @@ export async function performSetUpLoginSubmit(deps: SetUpLoginDeps): Promise<voi
     });
     dispatch({ type: 'SET_FETCHING', value: false });
 
-    if (r.isError) {
-      const errorData = (r.data as { errorData?: unknown }).errorData;
-      const status = extractStatus(r.data);
-      if (errorData === null) {
-        dispatch({ type: 'SET_FORM', form: 'connection-error', remember: true });
-        return;
-      }
-      const message =
-        ((r.data as { errorData?: { message?: string } }).errorData?.message) ??
-        ((r.data as { message?: string }).message);
-      const statusCode = (r.data as { statusCode?: number }).statusCode;
-
-      if (message === USERS_ERRORS.CODE_NEEDED && statusCode === 202) {
+    // `/v2.0/users/set-up-login/web` indicates "email code required" with
+    // HTTP 202 + body `{ message: USERS.SETUP_LOGIN_EMAIL_CODE_NEEDED,
+    // statusCode: 202 }`. 202 is a 2xx so the DAL treats it as success and
+    // gives us the parsed body in `r.data` (not in an error envelope). We
+    // must branch on the body BEFORE calling onSuccess() — otherwise wallet-
+    // /OAuth-only users get sent to /pro/balance instead of the OTP form.
+    if (!r.isError) {
+      const body = (r.data ?? {}) as { message?: string; statusCode?: number };
+      if (body.message === USERS_ERRORS.CODE_NEEDED || r.status === 202) {
         dispatch({ type: 'SET_EMAIL_CODE_STEP', value: true });
         dispatch({ type: 'SET_CONFIRM_DEVICE', value: true });
         dispatch({ type: 'SET_FORM', form: 'security-verification', remember: true });
         onCodeStepRequired();
         return;
       }
-      if (message === USERS_ERRORS.INVALID_EMAIL) {
-        dispatch({ type: 'SET_EMAIL_ERROR', error: 'AUTHORIZATION.EMAIL.INVALID_EMAIL' });
-        return;
-      }
-      if (message === USERS_ERRORS.EMAIL_ALREADY_EXISTS) {
-        dispatch({
-          type: 'SET_EMAIL_ERROR',
-          error: 'AUTHORIZATION.EMAIL.EMAIL_ALREADY_EXIST_SET_UP',
-        });
-        return;
-      }
-      reportError({
-        error: new Error(message ?? 'set-up-login failed'),
-        type: SENTRY_ERRORS_TYPES.SET_UP_LOGIN_ERROR,
-        status,
-        errorMessage: message ?? 'unknown',
-      });
-      track({
-        category: 'error',
-        action: 'AUTHORIZATION.SET_UP_LOGIN.SOMETHING_WRONG',
-        label: `status: ${status}, error: ${message}`,
-      });
+      onSuccess();
       return;
     }
 
-    onSuccess();
+    const errorData = (r.data as { errorData?: unknown }).errorData;
+    const status = extractStatus(r.data);
+    if (errorData === null) {
+      dispatch({ type: 'SET_FORM', form: 'connection-error', remember: true });
+      return;
+    }
+    const message =
+      ((r.data as { errorData?: { message?: string } }).errorData?.message) ??
+      ((r.data as { message?: string }).message);
+
+    if (message === USERS_ERRORS.INVALID_EMAIL) {
+      dispatch({ type: 'SET_EMAIL_ERROR', error: 'AUTHORIZATION.EMAIL.INVALID_EMAIL' });
+      return;
+    }
+    if (message === USERS_ERRORS.EMAIL_ALREADY_EXISTS) {
+      dispatch({
+        type: 'SET_EMAIL_ERROR',
+        error: 'AUTHORIZATION.EMAIL.EMAIL_ALREADY_EXIST_SET_UP',
+      });
+      return;
+    }
+    reportError({
+      error: new Error(message ?? 'set-up-login failed'),
+      type: SENTRY_ERRORS_TYPES.SET_UP_LOGIN_ERROR,
+      status,
+      errorMessage: message ?? 'unknown',
+    });
+    track({
+      category: 'error',
+      action: 'AUTHORIZATION.SET_UP_LOGIN.SOMETHING_WRONG',
+      label: `status: ${status}, error: ${message}`,
+    });
     return;
   }
 
@@ -889,6 +1050,9 @@ export async function performChangePasswordSubmit(deps: ChangePasswordDeps): Pro
     oldPassword: state.oldPassword,
     code,
     captcha: captcha || undefined,
+    // `/v2.0/users/password/web` is CsrfGuard-protected — header MUST equal
+    // the cn_csrf cookie value or backend returns 403 before validating.
+    csrfToken: cookieValue('cn_csrf'),
   });
   dispatch({ type: 'SET_FETCHING', value: false });
 

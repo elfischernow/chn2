@@ -1,64 +1,100 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useMemo } from 'react';
+
+const compileRegex = (raw: string | null | undefined): RegExp | null => {
+  if (!raw) return null;
+  try {
+    return new RegExp(raw);
+  } catch {
+    return null;
+  }
+};
 
 interface ExtraIdFieldProps {
-  /** Display label — usually "Destination Tag", "Memo", or "Payment ID"
-   *  depending on the chain. Comes from `Currency.externalIdName`. */
-  label: string;
+  /** Chain-specific name surfaced in the floating label and error copy
+   *  — "Memo", "Destination Tag", "Payment ID". Defaults to "Memo".
+   *  Comes from `Currency.externalIdName`. */
+  fieldName?: string;
+  /** Validator from the upstream catalog. */
+  extraIdRegex?: string | null;
   value: string;
   onChange: (next: string) => void;
-  /** Per-chain regex from the catalog. Same on-blur check as RecipientField. */
-  extraIdRegex: string | null;
-  required?: boolean;
+  /** External (submit-time) error — wins over the local regex check. */
+  externalError?: string | null;
 }
 
 /**
- * Memo / destination-tag field. Renders only when the active TO currency's
- * `hasExternalId` is set. The chains that need one (XRP, TON-USDT, Cosmos
- * family, Monero) reject deposits without it on the upstream side, so this
- * is functionally a "your money disappears if you skip" hint to the user.
+ * Optional memo / destination-tag / payment-id input. Shares the
+ * `pt-address-*` shell and floating-label UX with `WalletAddressField`
+ * so the two fields read as a set. Only the "Paste" affordance is
+ * surfaced — wallet-connect and QR scan don't apply to a memo string.
+ *
+ * Renders only when the active TO currency's `hasExternalId` is set.
+ * The chains that need one (XRP, TON-USDT, Cosmos family, Monero) reject
+ * deposits without it on the upstream side.
  */
 export function ExtraIdField({
-  label,
+  fieldName,
+  extraIdRegex,
   value,
   onChange,
-  extraIdRegex,
-  required = true,
+  externalError,
 }: ExtraIdFieldProps) {
-  const inputId = useId();
-  const [touched, setTouched] = useState(false);
+  const validator = useMemo(() => compileRegex(extraIdRegex), [extraIdRegex]);
+  const localInvalid =
+    validator != null && value.length > 0 && !validator.test(value.trim());
+  const isInvalid = !!externalError || localInvalid;
 
-  const error = (() => {
-    if (!touched) return null;
-    const trimmed = value.trim();
-    if (!trimmed) return required ? `${label} required for this chain` : null;
-    if (!extraIdRegex) return null;
+  const pasteFromClipboard = async () => {
     try {
-      return new RegExp(extraIdRegex).test(trimmed) ? null : `Invalid ${label}`;
+      const text = await navigator.clipboard.readText();
+      if (text) onChange(text.trim());
     } catch {
-      return null;
+      /* permission denied or no gesture — keyboard paste still works */
     }
-  })();
+  };
+
+  const name = fieldName ?? 'Memo';
+  const errorText = externalError
+    ?? (localInvalid
+      ? `${name} format doesn't match what this chain expects.`
+      : null);
 
   return (
-    <div className="ex-field" data-has-error={error ? '' : undefined}>
-      <label className="ex-field-label" htmlFor={inputId}>
-        {label}
+    <div className="pt-address-field" data-invalid={isInvalid || undefined}>
+      <label className="pt-address-input-wrap">
+        <input
+          className="pt-address-input"
+          type="text"
+          placeholder=" "
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
+          autoComplete="off"
+          aria-label={`Recipient ${name}`}
+          aria-invalid={isInvalid || undefined}
+        />
+        <span className="pt-address-floating-label">
+          Enter the {name} (optional)
+        </span>
       </label>
-      <input
-        id={inputId}
-        className="ex-field-input"
-        type="text"
-        autoComplete="off"
-        spellCheck={false}
-        placeholder={`Enter ${label.toLowerCase()}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => setTouched(true)}
-        aria-invalid={!!error}
-      />
-      {error && <span className="ex-field-error">{error}</span>}
+      <div className="pt-address-actions">
+        <button
+          type="button"
+          className="pt-address-paste"
+          onClick={pasteFromClipboard}
+        >
+          Paste
+        </button>
+      </div>
+      {errorText && (
+        <span className="pt-address-error" role="alert">
+          {errorText}
+        </span>
+      )}
     </div>
   );
 }

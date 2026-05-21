@@ -5,7 +5,7 @@
 import { trackEvent } from '../track';
 
 type Side = 'from' | 'to';
-type Mode = 'swap' | 'buy' | 'sell' | 'convert' | 'private';
+type Mode = 'swap' | 'buy' | 'sell' | 'convert' | 'private' | 'loans' | 'bridge';
 
 export const calculatorEvents = {
   selectCoin(side: Side, ticker: string): void {

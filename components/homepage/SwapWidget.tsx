@@ -15,7 +15,7 @@ import {
   type EstimateType,
   type RateFlow,
 } from '@/lib/api/exchange';
-import { SITE_URL } from '@/lib/config';
+import { CN_SITE_URL, SITE_URL } from '@/lib/config';
 import { shouldReverseDisplay } from '@/lib/limit-rate';
 import { FORCED_RECOMMENDED_PROVIDER } from '@/lib/providers/catalog';
 
@@ -25,10 +25,16 @@ import { ConvertView } from './calculator/modes/convert/ConvertView';
 import { impliedFromTo } from './calculator/modes/convert/LimitPriceField/limit-math';
 import { useLimitState } from './calculator/modes/convert/LimitPriceField/useLimitState';
 import { convertHash } from './calculator/modes/convert/convert.url';
+import { LoansView } from './calculator/modes/loans/LoansView';
+import { loansHash } from './calculator/modes/loans/loans.url';
+import { useLoanCurrencies } from './calculator/modes/loans/useLoanCurrencies';
+import { useLoanEstimate } from './calculator/modes/loans/useLoanEstimate';
+import { LoanAprBadge } from './calculator/modes/loans/LoanAprBadge';
 import { PrivateView } from './calculator/modes/private/PrivateView';
 import { privateHash } from './calculator/modes/private/private.url';
 import { SwapView } from './calculator/modes/swap/SwapView';
 import { swapHash } from './calculator/modes/swap/swap.url';
+import { buildLoanDeepLink, type LoanCurrency } from '@/lib/api/coin-rabbit';
 import { formatAmount, formatUsd } from './calculator/shared/format';
 import type { ConvMode, FiatDir, RateUI } from './calculator/shared/types';
 import { useHashSync } from './calculator/shared/useHashSync';
@@ -47,8 +53,10 @@ const MODES = [
   { id: 'buysell', label: 'Buy / Sell', sub: 'with card · Apple Pay · bank' },
   // The internal mode id stays `convert` so the URL hash, analytics, and
   // legacy `proExchangeMode=true` plumbing don't churn — only the user-
-  // facing tab label is renamed back to "Trade", which reads truer to
-  // what the surface is (Pro spot/limit/market book) than "Convert".
+  // facing tab label is "Trade", which reads truer to what the surface is
+  // (Pro spot/limit/market book) than "Convert". Same tab also lives on
+  // /exchange — the two surfaces share `ConvertView`, `useExchangeEstimate`
+  // and `convertHash` so the behaviour is identical by construction.
   { id: 'convert', label: 'Trade', sub: 'spot · limit · market · fixed' },
 ] as const;
 
@@ -58,11 +66,11 @@ const MORE_MODES = [
   { id: 'bridge', label: 'Bridge', sub: 'move across chains', icon: '⇆' },
 ] as const;
 
-// Wider than the registry's `ModeId` (swap | buysell | convert | private):
-// includes the More-menu placeholders (loans, perps, bridge, stake) which
-// don't have their own flows yet but are still legal values for the tab
-// state. The mode-specific adapters in `MODE_REGISTRY` only cover the
-// active four.
+// Wider than the registry's typed ModeId: includes More-menu placeholders
+// (bridge, future perps/stake) that don't have their own flows yet but are
+// still legal values for the tab state. `loans` IS a real mode — it has
+// a full view and URL adapter in the registry, but lives in More by
+// product direction.
 type ModeId = (typeof MODES)[number]['id'] | (typeof MORE_MODES)[number]['id'];
 
 // Per-mode defaults — mirrors `defaultTickers` in the legacy SPA's
@@ -90,6 +98,21 @@ const DEFAULTS = {
   // `currencyByPair` lookup resolve to a real Currency record so
   // `addressRegex` / `extraIdRegex` reach the validation path.
   private: { from: 'USDT', to: 'USDT', fromNetwork: 'trx', toNetwork: 'trx', amount: '5000' },
+  // Loans default: BTC collateral, USDT-TRC20 loan, 0.1 BTC. The natural
+  // direction is "put up crypto, get a stablecoin loan" — the price-down
+  // limit shown in `LoanTermsBlock` then reads as a clean
+  // "crypto-priced-in-stable" rate (1 BTC ≈ X USDT). `trx` is our
+  // catalog's network code for TRC-20 (the legacy `trc20` alias is just
+  // a brand string). FROM/TO are not symmetric — collateral and loan
+  // come from two different coin-rabbit lists.
+  loans: { from: 'BTC', to: 'USDT', fromNetwork: 'btc', toNetwork: 'trx', amount: '0.1' },
+  // Bridge default: USDT-TRC20 → USDT-Solana at 200 USDT. The canonical
+  // cross-chain demo case — same asset, different chain — which makes the
+  // mode's value-prop (move tokens between chains) obvious at first glance.
+  // SOL is the destination because Solana USDT is one of the most-bridged
+  // landing chains and the picker highlights the same-ticker row on the
+  // right pane when the user picks a new destination chain.
+  bridge: { from: 'USDT', to: 'USDT', fromNetwork: 'trx', toNetwork: 'sol', amount: '200' },
 } as const;
 
 // Mode + direction-specific eyebrow line. Buy/Sell read differently because
@@ -176,6 +199,9 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   const isFiatMode = mode === 'buysell';
   const isConvert = mode === 'convert';
   const isPrivate = mode === 'private';
+  const isLoans = mode === 'loans';
+  const isBridge = mode === 'bridge';
+  const isSwap = mode === 'swap';
   const pairTag = `${from}-${to}`;
 
   // Currency lookups — needed by `shouldReverseDisplay` for the `isStable`
@@ -248,16 +274,87 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   // forwards `source=private-transfers`, and the upstream returns a
   // real fee + a rateId we bind into the transaction at submit.
   const driverAmount = direction === 'direct' ? fromAmount : toAmount;
+  // Pass empty amount when Loans is active so the swap estimator
+  // short-circuits — Loans rides its own `useLoanEstimate` below and the
+  // upstream `/v1.7/exchange/estimate` has nothing to say about the
+  // CoinRabbit loan flow.
   const { estimate, error, isLoading } = useExchangeEstimate({
     from,
     to,
     fromNetwork,
     toNetwork,
-    amount: driverAmount,
+    amount: isLoans ? '' : driverAmount,
     flow,
     type: direction,
-    allowSameAsset: isPrivate,
+    // Only Trade (Convert) keeps the "pick a different currency" guard.
+    // Every other mode lets same-ticker / same-network pairs fall through
+    // to the upstream estimator — Swap, Buy/Sell, Bridge and Private all
+    // have legitimate same-asset use-cases (private-transfer wrappers,
+    // mono-pair bridge moves) and the upstream returns the real error
+    // when one applies. Convert is crypto-crypto trading; same-pair there
+    // is genuinely a UX mistake worth surfacing client-side.
+    allowSameAsset: !isConvert,
+    // Bridge tab tags the estimate so the upstream picks its cross-chain
+    // route. Same response shape; no other downstream changes needed.
+    source: isBridge ? 'bridge' : undefined,
   });
+
+  // Loans flow — own currency lists + estimator, lazy-fetched on first
+  // entry to the Loans tab (the module-level cache in
+  // `lib/api/coin-rabbit.ts` keeps subsequent re-entries free). Hook is
+  // called unconditionally per the rules of hooks; the `enabled` arg
+  // gates the fetch so users who never open the Loans tab don't pay for
+  // it. The currency-list payload is small (~30 entries on each side)
+  // and lives at vip-api, same origin envelope as the swap estimator.
+  const loanLists = useLoanCurrencies(isLoans);
+  const loanDepositList = loanLists.lists?.deposit ?? [];
+  const loanList = loanLists.lists?.loan ?? [];
+  // Lookup helpers for the Loans-mode pickers. Falls back to a synthetic
+  // record built from the orchestrator's state when the lists haven't
+  // loaded yet — keeps the trigger label populated through the loading
+  // window instead of flashing the default seed.
+  const findLoan = (
+    list: readonly LoanCurrency[],
+    ticker: string,
+    network: string,
+  ): LoanCurrency | null => {
+    const tk = ticker.toLowerCase();
+    const nw = network.toLowerCase();
+    const exact = list.find(
+      (c) => c.currentTicker.toLowerCase() === tk && c.network.toLowerCase() === nw,
+    );
+    if (exact) return exact;
+    return list.find((c) => c.currentTicker.toLowerCase() === tk) ?? null;
+  };
+  const loanFromCurrency = findLoan(loanDepositList, from, fromNetwork);
+  const loanToCurrency = findLoan(loanList, to, toNetwork);
+  const {
+    estimate: loanEstimate,
+    error: loanError,
+    isLoading: loanLoading,
+  } = useLoanEstimate({
+    fromCode: from,
+    fromNetwork,
+    toCode: to,
+    toNetwork,
+    amount: driverAmount,
+    exchange: direction,
+    enabled: isLoans,
+  });
+
+  // Mirror the FOLLOWER field with the loan estimator's response, same
+  // render-time set pattern the swap estimator uses above. Track the
+  // estimate identity so we only push when the upstream genuinely
+  // returned a new quote.
+  const [loanEstimateRef, setLoanEstimateRef] = useState<typeof loanEstimate>(null);
+  if (isLoans && loanEstimate && loanEstimate !== loanEstimateRef) {
+    setLoanEstimateRef(loanEstimate);
+    if (direction === 'direct' && loanEstimate.amountTo != null) {
+      setToAmount(formatAmount(loanEstimate.amountTo));
+    } else if (direction === 'reverse' && loanEstimate.amountFrom != null) {
+      setFromAmount(formatAmount(loanEstimate.amountFrom));
+    }
+  }
 
   // Derived from `flow` so Convert+Fixed shares the same lock affordance
   // as Swap+Fixed without restating the rule per surface. The rate-id
@@ -352,7 +449,13 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
     read: (params) => {
       // Top-level tab — owned by the orchestrator, not by any single mode.
       const m = params.get('mode');
-      if (m === 'swap' || m === 'buysell' || m === 'convert' || m === 'private') setMode(m);
+      if (
+        m === 'swap'
+        || m === 'buysell'
+        || m === 'convert'
+        || m === 'private'
+        || m === 'loans'
+      ) setMode(m);
 
       // Common slice — every mode has these. Will move into per-mode state
       // hooks in step 4+; for now it stays inline so the setters in scope
@@ -462,6 +565,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
       else if (mode === 'convert') modeOut = convertHash.write({ sub: convMode });
       else if (mode === 'private')
         modeOut = privateHash.write({ address: recipientAddress, extraId: recipientExtraId });
+      else if (mode === 'loans') modeOut = loansHash.write({});
       for (const [k, v] of Object.entries(modeOut)) params.set(k, v);
 
       return params;
@@ -521,12 +625,30 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
 
   const onModeSwitch = (next: ModeId) => {
     setMode(next);
-    if (next === 'swap' || next === 'buysell' || next === 'convert') {
-      calculatorEvents.tabChange(next === 'buysell' ? (fiatDir === 'buy' ? 'buy' : 'sell') : (next as 'swap' | 'convert'));
+    if (
+      next === 'swap'
+      || next === 'buysell'
+      || next === 'convert'
+      || next === 'loans'
+      || next === 'bridge'
+    ) {
+      calculatorEvents.tabChange(next === 'buysell' ? (fiatDir === 'buy' ? 'buy' : 'sell') : (next as 'swap' | 'convert' | 'loans' | 'bridge'));
     }
     if (next === 'swap') applyDefaults('swap');
     else if (next === 'buysell') applyDefaults(fiatDir === 'buy' ? 'buy' : 'sell');
     else if (next === 'convert') applyDefaults('convert');
+    // Bridge re-seeds the FROM/TO/network/amount slots from its own
+    // canonical preset (USDT-TRC20 → USDT-Solana). Without this branch a
+    // user coming from the Swap tab would carry BTC → ETH into Bridge and
+    // see the wrong "from" chain in the picker — same shape bug Loans had
+    // before its branch was added below.
+    else if (next === 'bridge') applyDefaults('bridge');
+    else if (next === 'loans') {
+      applyDefaults('loans');
+      // Loans drives the estimator from FROM in direct mode (same default
+      // as Swap). The deposit/loan picker state lives on the shared
+      // `from/to` slot — applyDefaults already seeded both.
+    }
     else if (next === 'private') {
       applyDefaults('private');
       // Private mode reads the TO field as the canonical "recipient gets"
@@ -584,6 +706,24 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   })();
 
   const exchangeHref = (() => {
+    if (isLoans) {
+      // Unauth users sign up first so the cabinet's loan-create flow
+      // boots into the same pair they were just looking at. Auth users
+      // skip directly into the cabinet's loans page, which reads the
+      // same query contract.
+      const loanUrl = buildLoanDeepLink({
+        from,
+        fromNetwork,
+        to,
+        toNetwork,
+        amount: direction === 'direct' ? fromAmount : toAmount,
+        base: SITE_URL,
+      });
+      if (!isLoggedIn) {
+        return `/registration?next=${encodeURIComponent(loanUrl)}`;
+      }
+      return loanUrl;
+    }
     if (isPrivate) {
       return buildPrivateTransferUrl({
         ticker: from,
@@ -611,7 +751,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
       if (direction === 'reverse' && toAmount) qs.set('amountTo', toAmount);
       else if (fromAmount) qs.set('amount', fromAmount);
       if (flow === 'fixed-rate') qs.set('rateMode', 'fixed');
-      return `${SITE_URL}/pro/exchange?${qs.toString()}`;
+      return `${CN_SITE_URL}/pro/exchange?${qs.toString()}`;
     }
     return buildExchangeUrl({
       from,
@@ -643,7 +783,9 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         ? privateSubmit === 'sending'
           ? 'Sending…'
           : 'Send'
-        : 'Exchange';
+        : isLoans
+          ? 'Get loan'
+          : 'Exchange';
 
   // Address validity for the private-mode submit gate. Re-uses the same
   // catalog regex PrivateView surfaces visually, so a click on Send when
@@ -704,7 +846,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
             : undefined,
         source: 'private-transfers',
       });
-      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
+      window.location.href = `${CN_SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
     } catch (err) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -735,10 +877,10 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         ...(direction === 'direct'
           ? { fromAmount: Number(fromAmount) }
           : { toAmount: Number(toAmount) }),
-        source: isFiatMode ? 'fiat' : 'site',
+        source: isFiatMode ? 'fiat' : isBridge ? 'bridge' : 'site',
         authenticated: true,
       });
-      window.location.href = `${SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
+      window.location.href = `${CN_SITE_URL}/exchange/txs/${encodeURIComponent(tx.id)}`;
     } catch (err) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -823,11 +965,12 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
   const proSlotEligible =
     estimate == null || (estimate.cashbackUsd != null && estimate.cashbackUsd > 0);
   const showSkeletonPro = isLoading && proSlotEligible;
-  // Hide the cashback upsell in fiat mode (provider strip takes its place)
-  // and in Convert (the "Join Pro for free" CTA below sits in that slot —
-  // a different hook for an audience that's already evaluating a Pro
-  // feature).
-  const showPro = !isFiatMode && !isConvert && (showSkeletonPro || proValuable);
+  // Hide the cashback upsell in fiat mode (provider strip takes its place),
+  // in Convert (the "Join Pro for free" CTA below sits in that slot — a
+  // different hook for an audience that's already evaluating a Pro feature),
+  // and in Loans (no cashback on the loan flow; the APR plate covers the
+  // same vertical slot).
+  const showPro = !isFiatMode && !isConvert && !isLoans && (showSkeletonPro || proValuable);
 
   const onProClick = () => {
     calculatorEvents.exchangeClick(`pro:${from}`, to);
@@ -929,7 +1072,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
           />
         )}
 
-        {mode === 'swap' && (
+        {(isSwap || isBridge) && (
           <SwapView
             currencies={currencies}
             from={from}
@@ -943,6 +1086,12 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
             showSkeletonTo={showSkeletonTo}
             isFixedFlow={isFixedFlow}
             withdrawalFee={estimate?.withdrawalFee ?? null}
+            // Bridge swaps in the chain-then-coin picker and tells each
+            // side what the paired ticker is, so chain clicks
+            // auto-resolve to the matching currency on the new chain.
+            pickerKind={isBridge ? 'bridge' : 'standard'}
+            fromPairedTicker={isBridge ? to : undefined}
+            toPairedTicker={isBridge ? from : undefined}
             onSelectFrom={onPickFrom}
             onSelectTo={(c) => {
               setTo(c.currentTicker.toUpperCase());
@@ -1003,6 +1152,50 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
           />
         )}
 
+        {isLoans && (
+          <LoansView
+            depositList={loanDepositList}
+            loanList={loanList}
+            from={from}
+            fromNetwork={fromNetwork}
+            fromAmount={fromAmount}
+            to={to}
+            toNetwork={toNetwork}
+            toAmount={toAmount}
+            fromCurrency={loanFromCurrency}
+            toCurrency={loanToCurrency}
+            hasError={Boolean(loanError) || loanEstimate?.errorCode != null}
+            showSkeletonFrom={loanLoading && direction === 'reverse'}
+            showSkeletonTo={loanLoading && direction === 'direct'}
+            estimate={loanEstimate}
+            isCurrenciesLoading={loanLists.isLoading}
+            onSelectFrom={(c) => {
+              setFrom(c.currentTicker.toUpperCase());
+              setFromNetwork(c.network);
+              // Seed the FROM amount with the catalog default for the
+              // chosen collateral, when one's available, so the picker
+              // change refreshes the estimate without the user having to
+              // re-type. Match the swap path's behaviour: only overwrite
+              // when the current value still looks like the previous
+              // default (so user-typed numbers survive).
+              const def = c.loanDepositDefaultAmount;
+              if (def != null) setFromAmount(String(def));
+            }}
+            onSelectTo={(c) => {
+              setTo(c.currentTicker.toUpperCase());
+              setToNetwork(c.network);
+            }}
+            onFromAmountChange={(value) => {
+              setDirection('direct');
+              setFromAmount(value);
+            }}
+            onToAmountChange={(value) => {
+              setDirection('reverse');
+              setToAmount(value);
+            }}
+          />
+        )}
+
         {isFiatMode && (
           <BuySellView
             currencies={currencies}
@@ -1037,7 +1230,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         )}
       </div>
 
-      {!isPrivate && (
+      {!isPrivate && !isLoans && (
       <div className="swap-rate">
         <span className="swap-rate-text">
           {outOfRange ? (
@@ -1165,12 +1358,27 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
         );
       })()}
 
+      {isLoans && (
+        <div className="swap-loans-foot">
+          <LoanAprBadge estimate={loanEstimate} isLoading={loanLoading} />
+          {loanEstimate?.errorCode && (
+            <span className="swap-rate-err" role="alert">
+              {loanEstimate.errorCode === 'INVALID_PAIR'
+                ? 'This loan pair is not supported at the moment.'
+                : loanEstimate.errorCode}
+            </span>
+          )}
+        </div>
+      )}
+
       <a
         className="swap-cta"
         href={
           // Buy/Sell unauth: /registration. Convert routing already lives
           // in `exchangeHref` (sign-up unauth, /pro/exchange auth) — no
-          // extra branch here.
+          // extra branch here. Loans routing also lives inline in
+          // `exchangeHref` (the unauth path encodes the destination as
+          // `?next=` so the cabinet boots into the same pair).
           !isLoggedIn && isFiatMode ? '/registration' : exchangeHref
         }
         onClick={
@@ -1242,7 +1450,7 @@ export function SwapWidget({ currencies }: SwapWidgetProps) {
       {showPro && (
         <a
           className="swap-pro"
-          href={isLoggedIn ? `${SITE_URL}/pro/balance` : '/registration'}
+          href={isLoggedIn ? `${CN_SITE_URL}/pro/balance` : '/registration'}
           onClick={onProClick}
         >
           {showSkeletonPro ? (

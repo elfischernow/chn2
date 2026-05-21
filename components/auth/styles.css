@@ -41,9 +41,23 @@
 }
 
 .authorization-page .container {
+  /* Bootstrap-flavored container — legacy SCSS relied on this base class
+     coming from the global stylesheet (`@import bootstrap-grid` upstream),
+     which we never ported. Without max-width + auto-margin centering the
+     form hugged the viewport's left edge and the welcome panel ran off
+     to the right with a huge dead zone. The breakpoint stops match
+     Bootstrap 5's defaults so the visual width matches the legacy site
+     across the typical desktop widths. */
+  width: 100%;
+  margin-inline: auto;
   padding-inline-start: 16px;
   padding-inline-end: 16px;
 }
+@media (min-width: 576px)  { .authorization-page .container { max-width: 540px;  } }
+@media (min-width: 768px)  { .authorization-page .container { max-width: 720px;  } }
+@media (min-width: 992px)  { .authorization-page .container { max-width: 960px;  } }
+@media (min-width: 1200px) { .authorization-page .container { max-width: 1140px; } }
+@media (min-width: 1400px) { .authorization-page .container { max-width: 1320px; } }
 
 @media screen and (min-width: 992px) {
   .authorization-container {
@@ -889,3 +903,468 @@ html[dir='rtl'] .new-field__icon { right: unset; left: 12px; }
 }
 .change-password__button { margin-top: auto; }
 .change-password__button_modal { margin-top: 10px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2026 design refresh — bolder version. Bigger type, taller inputs,
+   roomier spacing, more contrast. The first iteration matched the swap-
+   widget aesthetic but rendered too dense for a landing-style auth page:
+   inputs felt squeezed, float-label gave a "two-line" look on empty fields,
+   value-prop column read as bullet-soup. This block (additive on top of
+   the legacy port) replaces those rules with larger, simpler primitives.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* — page bg: same atmospheric radial gradients, slightly stronger on dark
+     so the page reads as a hero, not a plain form chrome. */
+.authorization-page-wrap.authorization-page {
+  background:
+    radial-gradient(900px 480px at 78% -10%,
+      color-mix(in srgb, var(--chn-accent-blue) 10%, transparent), transparent 70%),
+    radial-gradient(700px 420px at 12% 110%,
+      color-mix(in srgb, var(--chn-accent-mint) 10%, transparent), transparent 70%),
+    var(--paper);
+}
+:where(html,body)[data-theme="dark"] .authorization-page-wrap.authorization-page {
+  background:
+    radial-gradient(900px 480px at 78% -10%,
+      color-mix(in srgb, var(--chn-accent-blue) 20%, transparent), transparent 70%),
+    radial-gradient(700px 420px at 12% 110%,
+      color-mix(in srgb, var(--chn-accent-mint) 14%, transparent), transparent 70%),
+    var(--paper);
+}
+
+/* — form layout: lose legacy `flex-grow:1 height:100%` so the form hugs
+     content. The legacy modal-style pinned-CTA looked sparse on a full-
+     page render. */
+.authorization { min-height: 0; }
+.authorization-form { min-height: 0; }
+.login,
+.registration,
+.auth-entry__form,
+.reset-password,
+.change-password,
+.set-up-login,
+.security-verification__form {
+  flex-grow: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.login__password,
+.registration__password,
+.registration__repeated-password,
+.registration__agreement,
+.registration__agreement_second-field { margin: 0; }
+.login-footer { margin-top: 4px; }
+.login__button,
+.registration__button,
+.reset-password__button,
+.change-password__button,
+.set-up-login__button,
+.security-verification__button { margin-top: 20px; }
+
+/* — form card: roomy surface, soft shadow, large radius. In light theme
+     the page bg has a faint white-ish overlay from the radial gradients
+     so a pure-white card disappears into it — we explicitly draw a 1px
+     hairline stroke + a deeper shadow so the card has a real edge. In
+     dark mode the surface is slightly lifted off the page bg via a
+     `--paper-2` tint (calculator does the same with `.swap-field`). — */
+@media screen and (min-width: 992px) {
+  .authorization-form {
+    max-width: 560px;
+    padding: 56px 56px 48px;
+    background: var(--paper-2);
+    border-radius: 28px;
+    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--ink) 4%, transparent),
+      0 24px 48px -16px color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+  :where(html,body)[data-theme="dark"] .authorization-form {
+    background: color-mix(in srgb, var(--paper-2) 80%, var(--paper));
+    border-color: color-mix(in srgb, #fff 6%, transparent);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03),
+      0 24px 48px -16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* — section header: title stacked above description, both bigger — */
+.authorization-section-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.authorization-section__title {
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--ink);
+}
+@media screen and (min-width: 992px) {
+  .authorization-section__title { font-size: 40px; line-height: 1.05; }
+}
+.authorization-section__description {
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  text-align: start;
+  margin: 0;
+  max-width: 44ch;
+}
+
+/* — inputs: tall, soft-fill, single-line text-center, gradient focus ring.
+     Visual language mirrors `.swap-field` on the homepage calculator
+     1:1 — same surface tint, same 1px inner stroke, same focus behaviour
+     (solidify the fill, drop the stroke, show a gradient ring via the
+     parent's ::before). Floating label is OFF for entry/login/reset
+     forms (`floatPlaceholder: false` in EntryForm). — */
+.new-input,
+.new-field__input-placeholder .new-input {
+  width: 100%;
+  height: 64px;
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--ink);
+  /* match `.swap-field` exactly */
+  background: rgba(246, 244, 248, 0.7);
+  border: 0;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(15, 15, 20, 0.04);
+  padding-block: 0;
+  padding-inline-start: 20px;
+  padding-inline-end: 52px;
+  margin: 0;
+  outline: 0;
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+:where(html,body)[data-theme="dark"] .new-input {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.new-input::placeholder {
+  color: color-mix(in srgb, var(--ink-3) 90%, transparent);
+  font-weight: 500;
+}
+.new-input:hover {
+  background: rgba(246, 244, 248, 0.9);
+}
+:where(html,body)[data-theme="dark"] .new-input:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+/* On focus: solidify the fill, drop the 1px inset (parent draws the
+   gradient ring via `.new-field__input::before`). Same as `.swap-field`. */
+.new-input:focus,
+.new-field__input:focus-within .new-input {
+  background: rgba(246, 244, 248, 1);
+  box-shadow: none;
+}
+:where(html,body)[data-theme="dark"] .new-input:focus,
+:where(html,body)[data-theme="dark"] .new-field__input:focus-within .new-input {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* — gradient focus ring scoped to `.new-field__input` (the wrapper around
+     the actual input element). Previously the ring lived on `.new-field`,
+     which is the outer container — when a field also has a footer-link
+     ("Forgot password?") the ring would wrap input+footer, so we had to
+     suppress it for footer fields. Result: email got the ring, password
+     didn't. Scoping to the input wrapper means both fields render the
+     same affordance regardless of header/footer rows. — */
+.new-field { position: relative; }
+.new-field__input { position: relative; }
+.new-field__input::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1.5px;
+  background: var(--chn-gradient-accent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.new-field__input:focus-within::before { opacity: 1; }
+/* The .new-field outer ::before from older overrides — make sure no rule
+   leaves a stale ring on the parent. */
+.new-field::before { content: none; }
+
+/* Floating-label fallback (still used by register, set-up-login etc.):
+   keep the legacy float behaviour but match the new input metrics. */
+.new-field__input-placeholder .new-input { padding-top: 18px; height: 64px; }
+.new-field-input__placeholder {
+  top: 10px;
+  font-size: 17px;
+  line-height: 20px;
+  color: var(--ink-3);
+  font-weight: 500;
+  padding-inline-start: 20px;
+  transform: translate(0, 12px) scale(1);
+}
+.new-field__input-placeholder .new-input:focus + .new-field-input__placeholder,
+.new-field__input-placeholder .new-input:not(:placeholder-shown) + .new-field-input__placeholder,
+.new-field__input-placeholder .new-input:-webkit-autofill + .new-field-input__placeholder {
+  transform: translate(0, -2px) scale(0.72);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.new-input.new-input_success {
+  box-shadow: inset 0 0 0 1.5px var(--chn-success);
+}
+.new-input_error,
+.new-input.new-input_error {
+  background: color-mix(in srgb, var(--chn-attention-bg) 50%, var(--paper));
+  box-shadow: inset 0 0 0 1.5px var(--chn-attention);
+}
+
+/* Autofill — browsers force their own background + black text when the
+   password manager fills the field. The legacy rule already neutralises
+   the background via a 1000px inset shadow trick; here we also force the
+   text colour so dark-mode autofill doesn't render black-on-dark. */
+.new-input:is(:-webkit-autofill, :autofill),
+.new-input:is(:-webkit-autofill, :autofill):hover,
+.new-input:is(:-webkit-autofill, :autofill):focus {
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  /* Re-state the legacy 1000px inset shadow so it survives our override
+     order. var(--paper-2) matches the resting input fill in both themes. */
+  -webkit-box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent),
+    0 0 0 1000px var(--paper-2) inset !important;
+          box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 7%, transparent),
+    0 0 0 1000px var(--paper-2) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* — eye-toggle: subtle, accent on hover — */
+.new-field__icon {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  cursor: pointer;
+  color: var(--ink-3);
+  transition: color 150ms;
+  z-index: 2;
+}
+.new-field__icon:hover { color: var(--accent); }
+html[dir='rtl'] .new-field__icon { right: unset; left: 16px; }
+
+/* — "Forgot password?" footer link — smaller, accent on hover. Removed
+     padding-bottom from header rule so it doesn't push the input down. */
+.new-field__header,
+.new-field__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.new-field__header { padding-bottom: 0; margin-bottom: 8px; }
+.new-field__footer { padding: 10px 4px 0; }
+.new-field__footer-label {
+  font-size: 14px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.new-field__footer-label:hover { color: var(--accent); }
+
+/* — primary CTA: full-width, tall, big bold text — */
+.login__button,
+.registration__button,
+.reset-password__button,
+.change-password__button,
+.set-up-login__button,
+.success-block__button,
+.security-verification__button {
+  height: 60px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  cursor: pointer;
+  transition: background 150ms, transform 50ms, box-shadow 150ms;
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.login__button:hover,
+.registration__button:hover,
+.reset-password__button:hover,
+.change-password__button:hover,
+.set-up-login__button:hover,
+.success-block__button:hover,
+.security-verification__button:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+.login__button:active,
+.registration__button:active,
+.reset-password__button:active,
+.change-password__button:active,
+.set-up-login__button:active,
+.success-block__button:active,
+.security-verification__button:active {
+  transform: translateY(1px);
+}
+.login__button[disabled],
+.registration__button[disabled],
+.success-block__button[disabled],
+.security-verification__button[disabled] {
+  background: color-mix(in srgb, var(--accent) 40%, var(--paper-2));
+  color: color-mix(in srgb, #fff 80%, transparent);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* — auth-entry signup-suggestion banner: mint-tinted card — */
+.auth-entry__signup-block {
+  margin-top: 4px;
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--chn-green-tint-1) 55%, var(--paper-2));
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+:where(html,body)[data-theme="dark"] .auth-entry__signup-block {
+  background: color-mix(in srgb, var(--chn-green) 10%, var(--paper-2));
+}
+.auth-entry__signup-block .registration__agreement { margin: 0; }
+
+/* — "or continue with" divider: thinner, lowercase caption — */
+.registration__hint {
+  display: flex; align-items: center; gap: 14px;
+  margin: 24px 0 14px;
+  position: static;
+  padding: 0;
+  min-height: 0;
+}
+.registration__hint::before,
+.registration__hint::after {
+  content: ''; flex: 1; height: 1px; width: auto;
+  position: static; top: auto; left: auto; transform: none;
+  background: color-mix(in srgb, var(--ink-3) 22%, transparent);
+}
+.registration__hint__text {
+  position: static;
+  padding: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+@media screen and (min-width: 992px) {
+  .registration__hint__text { background: transparent; }
+}
+
+/* — social row: equal-width, taller, hover lift — */
+.social-buttons {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 4px;
+}
+.social-buttons__button {
+  flex: 1 1 calc(33% - 12px);
+  min-width: 0;
+  height: 56px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 150ms, box-shadow 150ms, transform 50ms;
+}
+:where(html,body)[data-theme="dark"] .social-buttons__button {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.social-buttons__button:hover {
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+:where(html,body)[data-theme="dark"] .social-buttons__button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.social-buttons__button:active { transform: translateY(1px); }
+.social-buttons__button img { width: 22px; height: 22px; }
+.social-buttons__text { color: var(--ink); }
+
+/* — value-prop right column — */
+.authorization-welcome { align-self: stretch; }
+@media screen and (min-width: 992px) {
+  .authorization-welcome {
+    padding: 72px 24px 24px 56px;
+    max-width: 500px;
+  }
+}
+.auth-value-prop__eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--chn-green-tint-3) 55%, transparent);
+  border-radius: 999px;
+  margin-bottom: 20px;
+}
+:where(html,body)[data-theme="dark"] .auth-value-prop__eyebrow {
+  background: color-mix(in srgb, var(--chn-green) 14%, transparent);
+  color: color-mix(in srgb, var(--ink) 85%, transparent);
+}
+.auth-value-prop__eyebrow::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--chn-green);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--chn-green) 28%, transparent);
+}
+.auth-value-prop__title {
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 24px;
+  max-width: 16ch;
+}
+/* Lead paragraph mirrors `.hero-dek` on the homepage: ink-2 body with a
+   darker, slightly heavier opening phrase (no highlighter, no gradient
+   underline — Hero deliberately leaves the colour accent to the headline
+   only). One sentence, no footnote. */
+.auth-value-prop__lead {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 44ch;
+  font-weight: 400;
+}
+.auth-value-prop__lead strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* — desktop side-by-side layout — */
+@media screen and (min-width: 992px) {
+  .authorization-container {
+    align-items: flex-start;
+    gap: 48px;
+  }
+}

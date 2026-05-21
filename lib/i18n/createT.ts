@@ -9,6 +9,22 @@ export type TranslationDict = Record<string, string>;
 
 export type TFunction = ReturnType<typeof createT>;
 
+/**
+ * One-shot translator. Same lookup rules as `createT`'s returned function,
+ * but inline — no closure, no factory. Useful for ad-hoc lookups where you
+ * don't want to thread a `t` through props, e.g. resolving a single Strapi
+ * key inside a `useMemo` or a server component that already has the dict.
+ */
+export function tr(
+  dict: TranslationDict | null | undefined,
+  key: string,
+  fallback?: string,
+): string {
+  const value = dict?.[key];
+  if (typeof value === 'string' && value.length > 0) return value;
+  return fallback ?? (DEBUG ? key : '');
+}
+
 export function createT(dict: TranslationDict | null | undefined) {
   return function t(
     key: string,

@@ -1,4 +1,4 @@
-import { ACCOUNT, BUSINESS, FAMILY, LEARN, PRODUCTS, SUPPORT } from '@/lib/links';
+import { BUSINESS, CN_SITE_URL, FAMILY, LEARN, PRODUCTS, SUPPORT } from '@/lib/links';
 
 export type Tone = 'orange' | 'green' | 'violet' | 'blue';
 
@@ -28,9 +28,13 @@ export interface MegaConfig {
   footHref: string;
 }
 
-export type MegaMenuId = 'exchange' | 'grow' | 'transfer' | 'learn';
+export type PersonalMenuId = 'exchange' | 'grow' | 'transfer' | 'learn';
+export type BusinessMenuId = 'earn' | 'manage' | 'build' | 'bizLearn';
+export type MegaMenuId = PersonalMenuId | BusinessMenuId;
 
-export const MEGA_MENU: Record<MegaMenuId, MegaConfig> = {
+const FOR_PARTNERS = '/for-partners';
+
+export const MEGA_MENU_PERSONAL: Record<PersonalMenuId, MegaConfig> = {
   exchange: {
     cols: 3,
     sections: [
@@ -188,7 +192,169 @@ export const MEGA_MENU: Record<MegaMenuId, MegaConfig> = {
   },
 };
 
-export const MM_BIZ_HIGHLIGHTS: Record<MegaMenuId, MegaHighlightItem[]> = {
+export const MEGA_MENU_BUSINESS: Record<BusinessMenuId, MegaConfig> = {
+  earn: {
+    cols: 2,
+    sections: [
+      {
+        title: 'Highlights',
+        kind: 'highlights',
+        items: [
+          {
+            title: 'Affiliate program',
+            sub: 'Share a link, earn from every swap',
+            tone: 'green',
+            href: BUSINESS.affiliate,
+          },
+          {
+            title: 'Referral links',
+            sub: 'Customisable links for any audience',
+            tone: 'green',
+            href: BUSINESS.referral,
+          },
+        ],
+      },
+      {
+        title: 'Programs',
+        kind: 'list',
+        items: [
+          { label: 'Traffic monetisation', href: BUSINESS.affiliate },
+          { label: 'NOW token discounts', href: FAMILY.nowToken },
+          { label: 'Become a partner', href: FOR_PARTNERS },
+        ],
+      },
+    ],
+    foot: 'See partner programs',
+    footHref: FOR_PARTNERS,
+  },
+  manage: {
+    cols: 2,
+    sections: [
+      {
+        title: 'Highlights',
+        kind: 'highlights',
+        items: [
+          {
+            title: 'Warm wallet',
+            sub: 'Treasury management for your project',
+            tone: 'orange',
+            href: `${CN_SITE_URL}/warm-wallets`,
+          },
+          {
+            title: 'NOW Custody',
+            sub: 'Receive, store and move crypto via one API',
+            tone: 'orange',
+            href: FAMILY.nowCustody,
+          },
+        ],
+      },
+      {
+        title: 'Assets',
+        kind: 'list',
+        items: [
+          { label: 'Asset listing', href: `${CN_SITE_URL}/asset-listing` },
+          { label: 'Multichain bridge', href: PRODUCTS.bridge },
+          { label: 'Market info API', href: `${CN_SITE_URL}/market-info-api` },
+        ],
+      },
+    ],
+    foot: 'See custody & treasury',
+    footHref: FOR_PARTNERS,
+  },
+  build: {
+    cols: 3,
+    sections: [
+      {
+        title: 'Highlights',
+        kind: 'highlights',
+        items: [
+          {
+            title: 'Exchange API',
+            sub: 'Free key, 1500+ assets, fixed-rate flow',
+            badge: 'Dev',
+            tone: 'blue',
+            href: BUSINESS.api,
+          },
+          {
+            title: 'White-label exchange',
+            sub: 'Your brand, our liquidity & rails',
+            tone: 'blue',
+            href: BUSINESS.whiteLabel,
+          },
+        ],
+      },
+      {
+        title: 'Integrations',
+        kind: 'list',
+        items: [
+          { label: 'Widget & button', href: BUSINESS.widget },
+          { label: 'Telegram bot', href: `${CN_SITE_URL}/telegram-bot` },
+          { label: 'Permanent swap address', href: `${CN_SITE_URL}/swap` },
+        ],
+      },
+      {
+        title: 'Ecosystem',
+        kind: 'list',
+        items: [
+          { label: 'NowPayments', href: FAMILY.nowPayments },
+          { label: 'NOWNodes', href: FAMILY.nowNodes },
+          { label: 'NOW Custody', href: FAMILY.nowCustody },
+        ],
+      },
+    ],
+    foot: 'See developer tools',
+    footHref: FOR_PARTNERS,
+  },
+  bizLearn: {
+    cols: 2,
+    sections: [
+      {
+        title: 'Highlights',
+        kind: 'highlights',
+        items: [
+          {
+            title: 'For partners',
+            sub: 'Solutions overview, get a free API key',
+            tone: 'violet',
+            href: FOR_PARTNERS,
+          },
+          {
+            title: 'Contact BD',
+            sub: 'Book a call with the business team',
+            tone: 'violet',
+            href: BUSINESS.contactBd,
+          },
+        ],
+      },
+      {
+        title: 'Resources',
+        kind: 'list',
+        items: [
+          { label: 'API docs', href: BUSINESS.api },
+          { label: 'Help center', href: SUPPORT.helpCenter },
+          { label: 'Security & AML', href: LEARN.security },
+          { label: 'Blog', href: LEARN.blog },
+        ],
+      },
+    ],
+    foot: 'Visit the partners hub',
+    footHref: FOR_PARTNERS,
+  },
+};
+
+// Flat union of both menu sets so `MegaMenuId` is a valid lookup key on
+// the combined config. The Header component picks between the personal
+// and business `NAV_ITEMS` list and then looks up the active id here.
+export const MEGA_MENU: Record<MegaMenuId, MegaConfig> = {
+  ...MEGA_MENU_PERSONAL,
+  ...MEGA_MENU_BUSINESS,
+};
+
+// Legacy hook: in personal mode the user can flip the audience switch to
+// business while still browsing the personal product nav — the highlights
+// row swaps in to B2B-flavoured cards. Untouched by this work; kept so the
+// personal-mode nav still re-skins for B2B viewers.
+export const MM_BIZ_HIGHLIGHTS: Record<PersonalMenuId, MegaHighlightItem[]> = {
   exchange: [
     {
       title: 'API & widgets',
@@ -248,14 +414,16 @@ export const MM_BIZ_HIGHLIGHTS: Record<MegaMenuId, MegaHighlightItem[]> = {
   ],
 };
 
-export const NAV_ITEMS: { id: MegaMenuId; label: string }[] = [
+export const NAV_ITEMS: { id: PersonalMenuId; label: string }[] = [
   { id: 'exchange', label: 'Exchange' },
   { id: 'grow', label: 'Grow' },
   { id: 'transfer', label: 'Transfer' },
   { id: 'learn', label: 'Learn' },
 ];
 
-export const HEADER_AUTH_LINKS = {
-  signup: ACCOUNT.signup,
-  login: ACCOUNT.login,
-};
+export const NAV_ITEMS_BIZ: { id: BusinessMenuId; label: string }[] = [
+  { id: 'earn', label: 'Earn' },
+  { id: 'manage', label: 'Manage' },
+  { id: 'build', label: 'Build' },
+  { id: 'bizLearn', label: 'Learn' },
+];

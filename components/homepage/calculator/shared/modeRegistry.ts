@@ -1,5 +1,6 @@
 import { buysellHash } from '../modes/buysell/buysell.url';
 import { convertHash } from '../modes/convert/convert.url';
+import { loansHash } from '../modes/loans/loans.url';
 import { privateHash } from '../modes/private/private.url';
 import { swapHash } from '../modes/swap/swap.url';
 
@@ -21,4 +22,5 @@ export const MODE_REGISTRY = {
   buysell: buysellHash,
   convert: convertHash,
   private: privateHash,
+  loans: loansHash,
 } satisfies Record<ModeId, unknown>;

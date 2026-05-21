@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 
-import { BUSINESS, FAMILY, LEARN, PRODUCTS, SITE_URL, SUPPORT } from '@/lib/links';
+import { BUSINESS, CN_SITE_URL, FAMILY, LEARN, PRODUCTS, SUPPORT } from '@/lib/links';
 
 import './for-partners.css';
 
@@ -47,8 +47,8 @@ const CRYPTO_EXCHANGE: SolutionCard[] = [
   { title: 'API', tone: 'blue', href: BUSINESS.api },
   { title: 'Widget', tone: 'green', href: BUSINESS.widget },
   { title: 'White Label Exchange', tone: 'violet', href: BUSINESS.whiteLabel },
-  { title: 'Telegram Bot', tone: 'orange', href: `${SITE_URL}/telegram-bot` },
-  { title: 'Permanent Swap Address', tone: 'green', href: `${SITE_URL}/swap` },
+  { title: 'Telegram Bot', tone: 'orange', href: `${CN_SITE_URL}/telegram-bot` },
+  { title: 'Permanent Swap Address', tone: 'green', href: `${CN_SITE_URL}/swap` },
 ];
 
 const ASSET_SERVICES: SolutionCard[] = [
@@ -56,7 +56,7 @@ const ASSET_SERVICES: SolutionCard[] = [
     title: 'Asset Listing',
     text: 'Get your coin or token listed on ChangeNOW and access 2,250,000+ exchange pairs.',
     tone: 'orange',
-    href: `${SITE_URL}/asset-listing`,
+    href: `${CN_SITE_URL}/asset-listing`,
   },
   {
     title: 'Multichain Bridge',
@@ -68,7 +68,7 @@ const ASSET_SERVICES: SolutionCard[] = [
     title: 'Warm Wallet',
     text: 'Manage your project’s crypto funds with high security and transaction speed.',
     tone: 'violet',
-    href: `${SITE_URL}/warm-wallets`,
+    href: `${CN_SITE_URL}/warm-wallets`,
   },
 ];
 
@@ -77,13 +77,13 @@ const ENTERPRISE: SolutionCard[] = [
     title: 'White Label Wallet',
     text: 'Launch a monetised non-custodial cryptocurrency wallet with built-in crypto exchange.',
     tone: 'blue',
-    href: `${SITE_URL}/your-wallet`,
+    href: `${CN_SITE_URL}/your-wallet`,
   },
   {
     title: 'Market Info API',
     text: 'Get real-time market rates for over 9,000 cryptocurrencies.',
     tone: 'orange',
-    href: `${SITE_URL}/market-info-api`,
+    href: `${CN_SITE_URL}/market-info-api`,
   },
 ];
 
@@ -310,7 +310,7 @@ export function ForPartnersPage() {
                 solutions that give your customers access to 1500+ assets and
                 competitive rates.
               </p>
-              <a className="fp-cat__link" href={`${SITE_URL}/crypto-exchange`}>
+              <a className="fp-cat__link" href={`${CN_SITE_URL}/crypto-exchange`}>
                 Explore all exchange products →
               </a>
             </div>
@@ -515,7 +515,7 @@ export function ForPartnersPage() {
               </span>
             </a>
           </div>
-          <a className="fp-press__more" href={`${SITE_URL}/press`}>
+          <a className="fp-press__more" href={`${CN_SITE_URL}/press`}>
             Read more →
           </a>
         </div>
@@ -606,7 +606,7 @@ export function ForPartnersPage() {
                 Help center
               </a>
               <a href={LEARN.faq}>FAQ</a>
-              <a href={`${SITE_URL}/contact`}>Contact</a>
+              <a href={`${CN_SITE_URL}/contact`}>Contact</a>
             </div>
           </div>
           <form

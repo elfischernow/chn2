@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
  * the rest of the page flips dark, so the "Trustpilot" wordmark stays
  * legible instead of disappearing into a dark backdrop.
  */
-interface Props {
+export interface TrustpilotWidgetProps {
   /** Trustpilot template id. */
   template?: string;
   /** Business-unit id. Defaults to ChangeNOW's. */
@@ -32,6 +32,10 @@ interface Props {
   height?: number;
   /** Override the explicit width (% or px string). */
   width?: string;
+  /** Horizontal alignment of the rendered widget content inside its
+   * iframe. Trustpilot defaults to "center"; pass "left" to anchor the
+   * stars/score to the iframe's left edge instead. */
+  alignment?: 'left' | 'center' | 'right';
   /** Optional className for layout-level overrides. */
   className?: string;
 }
@@ -49,8 +53,9 @@ export function TrustpilotWidget({
   locale = 'en-US',
   height = 28,
   width = '100%',
+  alignment,
   className,
-}: Props) {
+}: TrustpilotWidgetProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(
     theme === 'dark' ? 'dark' : 'light',
@@ -112,14 +117,8 @@ export function TrustpilotWidget({
         data-businessunit-id={businessUnitId}
         data-style-height={`${height}px`}
         data-style-width={width}
+        data-style-alignment={alignment}
         data-theme={resolvedTheme}
-        // Suppress hydration warnings on two fronts:
-        // 1. Trustpilot's bootstrap script mutates this node post-mount
-        //    (adds `style="position: relative"` + injects an iframe).
-        // 2. `theme="auto"` resolves to 'light' during SSR but may flip
-        //    to 'dark' on the client once `document[data-theme]` is
-        //    read, so the `data-theme` attribute itself can differ.
-        suppressHydrationWarning
       >
         <a
           href="https://www.trustpilot.com/review/changenow.io"

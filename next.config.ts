@@ -118,10 +118,32 @@ const nextConfig: NextConfig = {
         destination: '/:lang/currencies/:coin/:coinTo',
         permanent: true,
       },
+
+      // /registration → /authorization (unified entry form, see
+      // components/auth/AuthFlow/EntryForm.tsx + docs/auth-migration-plan.md
+      // §"unification"). Done at the next.config layer because Next 16's
+      // default-locale stripping eats the `/en/` prefix before route matching,
+      // so a server-component `redirect()` inside `[lang]/registration/page.tsx`
+      // never executes for the `/registration` (no prefix) request — it ends
+      // up rendering the layout's not-found instead.
+      { source: '/registration', destination: '/authorization', permanent: true },
+      {
+        source: `/${LANG}/registration`,
+        destination: '/:lang/authorization',
+        permanent: true,
+      },
     ];
   },
 
   async headers() {
+    // CSP is suppressed in dev so third-party tooling that injects scripts
+    // into the running app (Figma MCP capture, browser-side recorders,
+    // etc.) can talk to whatever origins they need without having to be
+    // pre-allowlisted. Production still ships the full policy below. If
+    // you're debugging a CSP-related issue specifically, set
+    // `CSP_DEV_ENABLE=1` to re-enable it locally.
+    const cspEnabled =
+      process.env.NODE_ENV === 'production' || process.env.CSP_DEV_ENABLE === '1';
     return [
       {
         source: '/:path*',
@@ -135,7 +157,24 @@ const nextConfig: NextConfig = {
           // prompt, so users see "access denied" without ever being asked.
           // Mic and geolocation stay denied — no feature uses them.
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
-          { key: 'Content-Security-Policy', value: buildCsp() },
+          ...(cspEnabled ? [{ key: 'Content-Security-Policy', value: buildCsp() }] : []),
+        ],
+      },
+      {
+        // Bfcache opt-out probe — checks whether prod mode honors the
+        // override that dev mode ignores. `Cache-Control: no-store` is
+        // the spec-defined trigger that disqualifies a page from
+        // bfcache eligibility across every modern browser. `has` scopes
+        // the rule to top-level navigations (browsers send
+        // `Sec-Fetch-Dest: document` only for those — `image`/`script`/
+        // `empty` for assets and RSC fetches), so static asset caching
+        // is untouched.
+        source: '/:path*',
+        has: [
+          { type: 'header', key: 'sec-fetch-dest', value: 'document' },
+        ],
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
         ],
       },
     ];
@@ -207,6 +246,13 @@ function buildCsp(): string {
       ...(isDev ? ["'unsafe-eval'"] : []),
       // TradingView fallback chart loads `tv.js` from S3.
       'https://s3.tradingview.com',
+      // Trustpilot bootstrap loader for the hero TrustBox widget.
+      'https://widget.trustpilot.com',
+      // Zendesk Messenger boot + chunked widget code. The snippet first
+      // hits zdassets, then chains into zendesk.com for the chat surface.
+      'https://static.zdassets.com',
+      'https://*.zdassets.com',
+      'https://*.zendesk.com',
     ],
     // styled-jsx + the inline keyframes in `loading.tsx` need
     // `'unsafe-inline'`; switching to nonce-based styles would force
@@ -222,8 +268,27 @@ function buildCsp(): string {
       // TradingView serves coin glyphs from its own static CDN.
       'https://s3.tradingview.com',
       'https://www.tradingview.com',
+      // Trustpilot widget pulls its star/logo art from these subdomains.
+      'https://*.trustpilot.com',
+      'https://*.trustpilot.net',
+      // Zendesk Messenger ships avatars + uploaded attachments from these
+      // hosts. `zdusercontent.com` is the agent/user attachment CDN.
+      'https://*.zendesk.com',
+      'https://*.zdassets.com',
+      'https://*.zdusercontent.com',
+      // Prediction-market event thumbnails. Polymarket hosts these on S3;
+      // the bucket name is stable but new events drift across regions, so
+      // we allow the parent `amazonaws.com` umbrella rather than pinning
+      // a single subdomain.
+      'https://*.amazonaws.com',
     ],
-    'font-src': ["'self'", 'data:', 'https://s3.tradingview.com'],
+    'font-src': [
+      "'self'",
+      'data:',
+      'https://s3.tradingview.com',
+      // Zendesk Messenger ships its own font bundle.
+      'https://*.zdassets.com',
+    ],
     'connect-src': [
       "'self'",
       // HMR websocket in dev only — production stays origin-locked.
@@ -244,8 +309,23 @@ function buildCsp(): string {
       // (o<orgId>.ingest.sentry.io) without leaking the org id into config.
       'https://*.sentry.io',
       'https://*.ingest.sentry.io',
+      // Zendesk Messenger long-polls + opens a WebSocket once a chat
+      // session starts. Same wildcard set the widget's docs recommend.
+      'https://*.zendesk.com',
+      'wss://*.zendesk.com',
+      'https://*.zdassets.com',
     ],
-    'frame-src': ["'self'", 'https://www.tradingview.com', 'https://s.tradingview.com'],
+    'frame-src': [
+      "'self'",
+      'https://www.tradingview.com',
+      'https://s.tradingview.com',
+      // Trustpilot renders the widget body inside an iframe served from
+      // this host once the bootstrap script attaches to our node.
+      'https://widget.trustpilot.com',
+      // Zendesk Messenger renders the chat surface inside an iframe
+      // proxied off the customer's tenant subdomain.
+      'https://*.zendesk.com',
+    ],
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],
   };

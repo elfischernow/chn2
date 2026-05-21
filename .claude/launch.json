@@ -7,6 +7,22 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "blog-dev",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "ASSET_PREFIX=none",
+        "MOBILE_APPS_LINK=https://changenow.io/mobile-app",
+        "NEXT_PUBLIC_BLOG_DEV_AUTH_MOCKS=1",
+        "WARM_CACHE_TOKEN=dev-warm",
+        "/bin/sh",
+        "-c",
+        "cd /Users/Elias/WebstormProjects/changenow-blog && npx next dev -p 3099"
+      ],
+      "port": 3099,
+      "autoPort": false,
+      "_note": "Sibling changenow-blog repo. Used for side-by-side header parity checks; safe to delete if the blog clone moves."
     }
   ]
 }

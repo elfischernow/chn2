@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   padding: 8px 0;
-  min-width: 200px;
+  min-width: 240px;
 }
 
 .email {
@@ -16,7 +16,35 @@
   white-space: nowrap;
 }
 
-.links {
+.group {
   display: flex;
   flex-direction: column;
+}
+
+.divider {
+  height: 1px;
+  background: var(--dropdown-border);
+  margin: 6px 12px;
+}
+
+.extMark {
+  margin-left: 8px;
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.signOut {
+  /* Stand out from the menu links as an action — keep the same base hover
+     treatment but tint the label so the contrast reads as "destructive
+     intent" without screaming about it. */
+  color: #E5484D;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.signOut:hover {
+  color: #C42127;
 }

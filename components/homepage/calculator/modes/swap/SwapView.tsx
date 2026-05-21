@@ -4,10 +4,13 @@ import { useRef } from 'react';
 
 import type { Currency } from '@/lib/api/currencies';
 
+import { BridgeCurrencyPicker } from '../../../BridgeCurrencyPicker';
 import { CurrencyPicker } from '../../../CurrencyPicker';
 import { FeesPill } from '../../shared/FeesPill';
 import { LockBadge } from '../../shared/LockBadge';
 import { amountSizeAttr, focusFieldInput } from '../../shared/utils';
+
+type PickerKind = 'standard' | 'bridge';
 
 interface SwapViewProps {
   currencies: readonly Currency[];
@@ -28,6 +31,30 @@ interface SwapViewProps {
   /** Withdrawal fee for the fees-pill tooltip. `null` while the estimate
    *  is in flight. */
   withdrawalFee: number | null;
+  /** Picker variant — `'standard'` (default combobox) for Swap, or
+   *  `'bridge'` (chain-then-coin two-pane modal) for the Bridge tab. The
+   *  two have the same `(currencies, selectedTicker, selectedNetwork,
+   *  onSelect)` contract so SwapView's plumbing doesn't otherwise care. */
+  pickerKind?: PickerKind;
+  /** Paired ticker for the FROM picker — Bridge uses this to auto-select
+   *  the same ticker on chain change (FROM mirrors TO's ticker). Ignored
+   *  for the standard picker. */
+  fromPairedTicker?: string;
+  /** Paired ticker for the TO picker. */
+  toPairedTicker?: string;
+  /** Upstream validated promo code is active for this estimate — flips the
+   *  TO field into "promo applied" treatment (highlighted receive amount,
+   *  pill copy switches from "Fees included" to "{X}% Promo applied", and
+   *  the strikethrough non-promo amount is shown below). */
+  promoApplied?: boolean;
+  /** Display percentage (e.g. `50`) for the active promo. Used by the
+   *  pill's "{X}% Promo applied" label. */
+  promoPercent?: number | null;
+  /** Pre-discount "what you'd get without the promo" amount, formatted
+   *  for display. Rendered as a strikethrough subline under the main
+   *  receive amount. `null` when no promo is applied or direction is
+   *  reverse (the user typed the TO field already). */
+  nonPromoToAmount?: string | null;
   onSelectFrom: (c: Currency) => void;
   onSelectTo: (c: Currency) => void;
   onFromAmountChange: (value: string) => void;
@@ -54,6 +81,12 @@ export function SwapView({
   showSkeletonTo,
   isFixedFlow,
   withdrawalFee,
+  pickerKind = 'standard',
+  fromPairedTicker,
+  toPairedTicker,
+  promoApplied = false,
+  promoPercent = null,
+  nonPromoToAmount = null,
   onSelectFrom,
   onSelectTo,
   onFromAmountChange,
@@ -62,6 +95,12 @@ export function SwapView({
 }: SwapViewProps) {
   const fromInputRef = useRef<HTMLInputElement>(null);
   const toInputRef = useRef<HTMLInputElement>(null);
+
+  // Single component reference so the JSX below stays free of branches.
+  // Both pickers expose the same `(currencies, selectedTicker,
+  // selectedNetwork, onSelect, ariaLabel, amountSlot)` contract; Bridge
+  // adds an optional `pairedTicker` for chain-change auto-select.
+  const Picker = pickerKind === 'bridge' ? BridgeCurrencyPicker : CurrencyPicker;
 
   return (
     <>
@@ -75,7 +114,7 @@ export function SwapView({
             <span>You send</span>
             <span></span>
           </div>
-          <CurrencyPicker
+          <Picker
             currencies={currencies}
             selectedTicker={from}
             selectedNetwork={fromNetwork}
@@ -85,6 +124,7 @@ export function SwapView({
             // refuses to quote, which is the right place to fail loud
             // rather than hiding the option from the picker entirely.
             ariaLabel="Send currency"
+            pairedTicker={fromPairedTicker}
             onSelect={onSelectFrom}
             amountSlot={
               <div className="swap-input-wrap">
@@ -123,17 +163,22 @@ export function SwapView({
 
       <div
         className="swap-field"
+        data-promo-applied={promoApplied || undefined}
         onClick={(e) => focusFieldInput(e, toInputRef.current)}
       >
         <div className="swap-label">
           <span>You get</span>
-          <FeesPill networkFee={{ amount: withdrawalFee, ticker: to }} />
+          <FeesPill
+            networkFee={{ amount: withdrawalFee, ticker: to }}
+            promoPercent={promoApplied ? promoPercent : null}
+          />
         </div>
-        <CurrencyPicker
+        <Picker
           currencies={currencies}
           selectedTicker={to}
           selectedNetwork={toNetwork}
           ariaLabel="Receive currency"
+          pairedTicker={toPairedTicker}
           onSelect={onSelectTo}
           amountSlot={
             <div className="swap-input-wrap">
@@ -141,6 +186,7 @@ export function SwapView({
                 ref={toInputRef}
                 className="swap-amount"
                 data-size={amountSizeAttr(toAmount)}
+                data-promo={promoApplied || undefined}
                 value={toAmount}
                 onChange={(e) => onToAmountChange(e.target.value)}
                 inputMode="decimal"
@@ -151,6 +197,13 @@ export function SwapView({
             </div>
           }
         />
+        {promoApplied && nonPromoToAmount && (
+          <div className="swap-promo-strike" aria-hidden>
+            <s>
+              {nonPromoToAmount} {to}
+            </s>
+          </div>
+        )}
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import { resolveStrapiIconUrl } from '@/lib/api/content/icon-url';
-import { SITE_URL } from '@/lib/config';
+import { CN_SITE_URL } from '@/lib/config';
 
 import { Coin } from '../../homepage/Coin';
 import styles from './blocks.module.css';
@@ -55,7 +55,7 @@ export function PopularFiatMarkets({ block, page }: BlockProps) {
             const cryptoTicker = (crypto.current_ticker ?? crypto.ticker).toUpperCase();
             const fiatSlug = fiat.link ?? fiat.ticker;
             const cryptoSlug = crypto.link ?? crypto.ticker;
-            const href = `${SITE_URL}/buy/${fiatSlug}/${cryptoSlug}`;
+            const href = `${CN_SITE_URL}/buy/${fiatSlug}/${cryptoSlug}`;
             const fiatIcon = resolveStrapiIconUrl(fiat.icon?.url);
             const cryptoIcon = resolveStrapiIconUrl(crypto.icon?.url) ?? page.iconUrl;
             return (

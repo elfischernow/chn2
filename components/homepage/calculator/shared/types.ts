@@ -5,11 +5,13 @@
  * primitives that show up in more than one place.
  */
 
-/** Identifiers for the four functional modes. The widget's "More" menu
- *  surfaces additional placeholder ids (loans, perps, bridge, stake) that
- *  don't have their own flows yet — those live as a wider local type in
- *  `SwapWidget` and are not part of the registry. */
-export type ModeId = 'swap' | 'buysell' | 'convert' | 'private';
+/** Identifiers for the functional modes that have a real per-mode view
+ *  and URL adapter. The widget's "More" menu surfaces additional
+ *  placeholder ids (perps, bridge, stake) that don't have their own
+ *  flows yet — those live as a wider local type in `SwapWidget` and are
+ *  not part of the registry. Loans is in More by user preference but
+ *  has a full implementation; it's a real mode, not a placeholder. */
+export type ModeId = 'swap' | 'buysell' | 'convert' | 'private' | 'loans';
 
 /** Buy/Sell tab direction toggle. Drives default ticker selection on tab
  *  open (USD→BTC vs BTC→EUR) and the "You pay" / "You sell" eyebrow. */

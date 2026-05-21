@@ -1,24 +1,23 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* `--z-header` is the page-chrome tier in the z-index scale (see
+     globals.css). All overlays are portalled out of the page tree via
+     `<Overlay>` and use `--z-dropdown` / `--z-modal`, which sit above
+     this — so the header always loses to picker/modal panels by design. */
+  z-index: var(--z-header);
   background: var(--color-header-bg);
   color: var(--color-header-fg);
   overflow: visible;
   border-bottom: 1px solid var(--color-header-border);
-  font-family: var(--chn-font-flex), 'Roboto Flex', sans-serif;
-  font-variation-settings:
-      'GRAD' 0,
-      'XOPQ' 96,
-      'XTRA' 468,
-      'YOPQ' 79,
-      'YTAS' 750,
-      'YTDE' -203,
-      'YTFI' 738,
-      'YTLC' 514,
-      'YTUC' 712,
-      'slnt' 0,
-      'wdth' 134;
+  /* `--chn-font-flex` comes from next/font/google in [lang]/layout.tsx;
+     self-hosted + preloaded + metric-matched fallback. `wdth: 134` is the
+     only non-default axis we use — pinning every other axis to its default
+     (as we used to) silently widens the glyphs vs the blog because the
+     browser short-circuits axis-default detection. Keep this in lockstep
+     with BlogHeader.module.css so type renders identically across apps. */
+  font-family: var(--chn-font-flex), sans-serif;
+  font-variation-settings: 'wdth' 134;
 }
 
 /* Make the homepage-only nav + switch inherit the same Roboto Flex axis the
@@ -32,8 +31,14 @@
 .bar {
   height: var(--header-h);
   /* 3-cell grid: brand left, nav centered in the remaining track, right end.
-     Predictable column positions across viewport widths and matches the
-     section gutter (max-width 1440 + 40px padding) for one shared grid. */
+     Predictable column positions across viewport widths.
+
+     Padding is a flat 20px (not the section `--gutter` clamp) so the bar's
+     anchor points line up with the blog header pixel-for-pixel at every
+     viewport: logo left edge = 20px, right cluster right edge =
+     viewport-20px (≤1440) or (viewport+1440)/2 - 20px (>1440). The bar is
+     intentionally wider than the page sections at max breakpoint —
+     1400px vs 1360px content area — to match the blog. */
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -41,17 +46,37 @@
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 0 var(--gutter);
+  padding: 0 20px;
 }
 
 /* Below this width the nav + right cluster don't fit alongside the brand
    without forcing tiny tap targets or text truncation — collapse to a
-   hamburger + sheet. The threshold (1100px) leaves headroom for long
-   localised tab labels (DE/RU run ~30% wider than EN) before things start
-   colliding mid-bar. */
-@media (max-width: 1099px) {
+   hamburger + sheet. 1200px is the same threshold the blog header uses, so
+   both apps swap to the tablet/mobile layout in lockstep. */
+@media (max-width: 1199px) {
   .bar > :global(.nav) { display: none; }
   .bar > .right { display: none !important; }
+  /* Personal/Business switch lives inside the slide-in sheet on mobile;
+     keep the one inside .brand off-screen so the bar only carries
+     logo · signup · burger. */
+  .brand > :global(.switch) { display: none; }
+}
+
+/* Minimal-mode override: on /authorization the bar carries only
+   logo + switch + settings, and there's no mobile sheet to fall back
+   on — so the desktop-only collapse rules above don't apply. Re-show
+   the switch and the right cluster at every viewport width.
+
+   The bar is a 3-cell grid (`auto 1fr auto`). With only two children
+   (brand + right) the right cluster auto-places into column 2 — that's
+   the 1fr stretch column, so settings would sit immediately after the
+   switch. Pin it to column 3 explicitly so the gear lands at the gutter
+   line the same way the icon cluster does on every other page. */
+.headerMinimal .brand > :global(.switch) { display: inline-flex !important; }
+.headerMinimal .bar > .right {
+  display: flex !important;
+  grid-column: 3;
+  justify-self: end;
 }
 
 .bar > :global(.nav) {
@@ -107,38 +132,75 @@
   /* Sits in column 3 of the bar grid — no auto-margin needed. */
 }
 
-/* Above the collapse threshold (1100px), show the right cluster. Below
+/* Above the collapse threshold (1200px), show the right cluster. Below
    it, the hamburger takes over (the @media block earlier in this file
    force-hides .right with !important so we don't fight specificity). */
-@media (min-width: 1100px) {
+@media (min-width: 1200px) {
   .right {
     display: flex;
   }
 }
 
-/* Hamburger toggle — only appears when the desktop nav has been hidden
-   above. Sits in column 3 of `.bar` so the brand stays put while the
-   right cluster swaps for a single icon. */
+/* Mobile cluster — only appears when the desktop nav has been hidden.
+   Holds [signup-CTA, hamburger] and sits at the right edge of the bar
+   (column 3 by auto-placement). Justify-self end so the cluster hugs
+   the gutter while the brand stays anchored to column 1. */
+.mobileCluster {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+  /* Pull the cluster's right edge right up to the bar's right padding,
+     so the hamburger's inner SVG lines up with the gutter line instead
+     of carrying its own 8-9px of mystery offset. The hamburger itself
+     keeps its 40px tap target via internal flex-end alignment. */
+  margin-right: -8px;
+}
+@media (max-width: 1199px) {
+  .mobileCluster { display: inline-flex; }
+}
+
+/* Compact sign-up pill shown next to the burger on mobile. Same colour
+   tokens as the desktop authButton so a B2B-mode switch tints both. */
+.mobileSignup {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+  color: #fff;
+  background: #00C26F;
+  transition: background-color 0.15s ease;
+}
+.mobileSignup:hover { background-color: #00A451; }
+
+/* Hamburger toggle. Inside `.mobileCluster`; keeps a 40px tap target but
+   visually right-anchors the SVG so the icon lines up with the gutter. */
 .hamburger {
   display: none;
   width: 40px;
   height: 40px;
   align-items: center;
-  justify-content: center;
+  /* flex-end so the SVG hugs the right edge of the button instead of
+     sitting in the centre — combined with the negative right margin on
+     `.mobileCluster` above, the icon lines up flush with the page gutter. */
+  justify-content: flex-end;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--Text-colors-Text-Primary);
   border-radius: 8px;
   cursor: pointer;
-  /* Push to the rightmost cell — `.bar`'s grid puts auto/1fr/auto and
-     this is the rightmost child when the hamburger replaces .right. */
-  justify-self: end;
   transition: background-color 0.15s ease-in-out;
 }
 .hamburger:hover {
   background-color: var(--color-header-button-hover);
 }
-@media (max-width: 1099px) {
+@media (max-width: 1199px) {
   .hamburger {
     display: inline-flex;
   }
@@ -160,8 +222,10 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 15, 20, 0.4);
-  /* Sticky header sits at z-index 100; the sheet must clear it. */
-  z-index: 200;
+  /* Header sits at `--z-header` (10); the mobile-nav sheet is page chrome
+     too, but must outrank the header. Sits below the overlay scale so
+     opening a picker from inside the sheet still pops over the sheet. */
+  z-index: calc(var(--z-header) + 10);
   opacity: 0;
   transition: opacity 200ms ease;
 }
@@ -182,7 +246,7 @@
   width: min(360px, 88vw);
   background: var(--color-header-bg);
   color: var(--color-header-fg);
-  z-index: 201;
+  z-index: calc(var(--z-header) + 11);
   /* Slide in from the right. Translate avoids reflowing the rest of the
      document when toggling. */
   transform: translateX(100%);
@@ -202,7 +266,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px 16px 12px;
   border-bottom: 1px solid var(--color-header-border);
   /* Stays put as the user scrolls a long sheet. */
   position: sticky;
@@ -211,81 +275,117 @@
   z-index: 1;
 }
 .sheetClose {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 0;
   background: transparent;
-  color: inherit;
+  color: var(--Text-colors-Text-Secondary);
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
 }
 .sheetClose:hover {
   background-color: var(--color-header-button-hover);
+  color: var(--Text-colors-Text-Primary);
 }
 .sheetBody {
+  /* No outer padding — sections butt up against each other and use
+     border-bottom dividers for separation (blog parity). */
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 20px;
+  padding: 0;
 }
 .sheetGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  /* Each top-level group hangs a hairline divider so the sheet reads as
+     a vertical stack of bands. */
+  border-bottom: 1px solid var(--color-header-border);
+  padding: 8px 0;
 }
 .sheetGroupTitle {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--Text-colors-Text-Secondary);
   margin: 0;
-  padding: 0 4px;
+  padding: 10px 16px 4px;
 }
 .sheetItem {
   /* `<a>` and `<button>` siblings render identically — same height,
-     same padding, same tap target size. */
+     same padding, same tap target size. Flat (no rounded background)
+     so the sheet looks like a tidy list of sections. */
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  height: 48px;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
   border: 0;
   background: transparent;
   color: var(--Text-colors-Text-Primary);
   font: inherit;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   text-align: left;
   text-decoration: none;
-  border-radius: 10px;
   cursor: pointer;
-  width: 100%;
   transition: background-color 0.15s ease;
 }
 .sheetItem:hover,
 .sheetItem:focus-visible {
   background-color: var(--color-header-button-hover);
 }
+/* Auth row near the top — two side-by-side buttons (Sign Up + Log In),
+   each with its own border, matching the blog's bottom auth row. */
+.sheetAuthRow {
+  display: flex;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-header-border);
+}
+.sheetAuthRow .sheetItem {
+  flex: 1;
+  justify-content: center;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-header-border);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.sheetAuthRow .sheetItem:hover {
+  border-color: var(--Text-colors-Text-Secondary);
+}
 .sheetItemPrimary {
   background: #00C26F;
   color: #fff;
   justify-content: center;
   font-weight: 600;
+  border-radius: 8px;
+  border: none;
 }
 .sheetItemPrimary:hover,
 .sheetItemPrimary:focus-visible {
   background: #00A451;
+  color: #fff;
+  border: none;
+}
+.sheetItemPrimaryBlue {
+  background: var(--b2b);
+}
+.sheetItemPrimaryBlue:hover,
+.sheetItemPrimaryBlue:focus-visible {
+  background: #4387EC;
 }
 .sheetCaret {
   margin-left: auto;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
-  opacity: 0.55;
+  color: var(--Text-colors-Text-Secondary);
   transition: transform 200ms ease;
 }
 .sheetItemOpen .sheetCaret {
@@ -294,15 +394,15 @@
 .sheetSubmenu {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px 0 8px 14px;
+  padding: 0 0 8px;
 }
 .sheetSubItem {
-  padding: 10px 12px;
-  font-size: 16px;
+  display: block;
+  padding: 10px 32px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--Text-colors-Text-Secondary);
   text-decoration: none;
-  border-radius: 8px;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .sheetSubItem:hover {
@@ -350,9 +450,18 @@
   position: relative;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out;
+  /* Suppress the user-agent focus ring — the gradient wrapper around this
+     button already provides a visible focus indicator (via `:focus-within`
+     on `.gradientWrapper`), so a second outline would double-ring. The
+     wrapper covers a11y; this just stops the duplicate. */
+  outline: none;
 }
 
 .iconButton:hover {
+  background-color: var(--color-header-button-hover);
+}
+
+.iconButton:focus-visible {
   background-color: var(--color-header-button-hover);
 }
 
@@ -362,10 +471,54 @@
   align-items: center;
 }
 
-.authButton {
+/* Authed "My account" cluster — green CTA on the left, grey chevron trigger
+   on the right. Mirrors the blog's two-tone pill: align-items: stretch on
+   the wrapper makes the chevron half match the CTA height pixel-for-pixel
+   without manual heights. */
+.myAccountWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+}
+/* Compound `.authButton.myAccountPrimary` so the override beats the
+   generic `.authButton { border-radius: 8px; padding: 8px 12px }` block
+   declared further down the file — single-class specificity would tie
+   and lose on source order. */
+.authButton.myAccountPrimary {
+  border-radius: 8px 0 0 8px;
+  /* Slight inset so the divider with the caret reads as a single pill. */
+  padding: 8px 14px 8px 14px;
+}
+/* Hairline divider between the green CTA and the grey chevron. Painted in
+   the header background colour so the seam reads as a slot, not a stroke. */
+.myAccountDivider {
+  align-self: stretch;
+  width: 1px;
+  background-color: var(--color-header-bg);
+}
+.myAccountCaret {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  padding: 0 12px;
+  background-color: var(--color-header-field);
+  color: var(--Text-colors-Text-Primary);
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 0.15s ease-in-out;
+}
+.myAccountCaret:hover {
+  background-color: var(--color-header-button-hover);
+}
+.myAccountCaret[aria-expanded='true'] {
+  background-color: var(--color-header-button-active);
+}
+
+.authButton {
+  display: flex;
   border: none;
   padding: 8px 12px;
   background: transparent;
@@ -377,7 +530,6 @@
   border-radius: 8px;
   text-decoration: none;
   cursor: pointer;
-  font-family: inherit;
 }
 
 .authButton:hover {
@@ -388,20 +540,36 @@
   background-color: var(--color-header-button-active);
 }
 
-.authButtonGreen,
-.authButtonGreen:hover,
-.authButtonGreen:active {
+.authButtonGreen {
   background-color: #00C26F;
   color: #fff;
 }
 
 .authButtonGreen:hover {
   background-color: #00A451;
-  color: #fff;
 }
 
 .authButtonGreen:active {
   background-color: #007A34;
+}
+
+/* Business-mode primary CTA. Uses the same `--b2b` blue the audience
+   switch tints the active tab with, so the colour story stays coherent
+   across the bar. Hover/active darken the same hue. */
+.authButtonBlue,
+.authButtonBlue:hover,
+.authButtonBlue:active {
+  background-color: var(--b2b);
+  color: #fff;
+}
+
+.authButtonBlue:hover {
+  background-color: #4387EC;
+  color: #fff;
+}
+
+.authButtonBlue:active {
+  background-color: #2A73DF;
   color: #fff;
 }
 
@@ -418,29 +586,49 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s ease-in-out;
+  /* Same focus-ring suppression as `.iconButton` — the round wrapper
+     handles the visible indicator. */
+  outline: none;
 }
 
+.brilliantButton:focus-visible {
+  background: var(--color-header-button-hover);
+}
+
+/* Square icon-button wrapper. Draws a 1px gradient ring around the button
+   on hover/active using the two-layer mask trick. The gradient fills the
+   pseudo-element, mask-composite cuts out the content-box, leaving only the
+   1px padding band visible — independent of the inner button's background
+   so semi-transparent fills no longer bleed through the ring. */
 .gradientWrapper {
   border-radius: 8px;
-  padding: 1px;
-  background: transparent;
   position: relative;
-  z-index: 1;
+  z-index: 0;
 }
 
 .gradientWrapper::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(-45deg, transparent 0%, var(--color-header-button-active) 100%);
-  background-origin: border-box;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
   border-radius: inherit;
-  z-index: -1;
+  padding: 1px;
+  background: linear-gradient(135deg, #4EA1F5 0%, #5BC0DE 50%, #76EAB1 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .gradientWrapper:hover::before,
+.gradientWrapper:focus-within::before,
 .gradientWrapperActive::before {
   opacity: 1;
 }
@@ -466,7 +654,7 @@
   display: none;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1200px) {
   .langWrap {
     display: contents;
   }

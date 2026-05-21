@@ -79,7 +79,18 @@ export function GoogleAuthButton({
       const status =
         result.status ||
         (result.data as { status?: number } | null | undefined)?.status;
-      if (status === 204 || (!result.isError && status && status >= 200 && status < 300)) {
+      const is2xx =
+        status === 204 || (!result.isError && !!status && status >= 200 && status < 300);
+      // `/v1.0/o-auth/google/web` returns 200 + `{ code: '2FA_CODE_NEEDED' }` when
+      // the linked user has 2FA enabled, and 204 + full session cookies on real
+      // success. Funnelling the 200+code case into `onSuccess` would bypass 2FA —
+      // route it through `onError` so the orchestrator switches to security-
+      // verification (it already handles `code === '2FA_CODE_NEEDED'`).
+      const successCode =
+        is2xx && result.data && typeof result.data === 'object'
+          ? (result.data as { code?: unknown }).code
+          : undefined;
+      if (is2xx && successCode !== '2FA_CODE_NEEDED') {
         onSuccess();
       } else {
         onError(result.data, response.credential);

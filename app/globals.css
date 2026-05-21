@@ -172,6 +172,20 @@
     0 8px 32px rgba(19, 19, 24, 0.16),
     inset 0 0.5px 0 rgba(255, 255, 255, 0.6);
 
+  /* ───────── z-index scale ─────────
+     Single source of truth for stacking. Anything overlay-like (dropdown,
+     modal, toast) MUST render via the `<Overlay>` primitive in
+     components/ui/Overlay.tsx — that portals into `#overlay-root` outside
+     the app's stacking contexts, so these values are absolute, not relative
+     to whatever transformed/backdrop-filtered ancestor the trigger sits in.
+     Header sits below all overlays by design. */
+  --z-header: 10;
+  --z-page-overlay: 50;          /* sticky in-page chrome (sub-nav, etc.) */
+  --z-dropdown: 1000;            /* anchored popovers / pickers */
+  --z-overlay-backdrop: 2000;    /* modal scrim */
+  --z-modal: 2010;               /* modal panel */
+  --z-toast: 3000;               /* highest — never blocked */
+
   /* Auth-flow palette aliases. Legacy SCSS for /authorization and
      /registration uses these `--pro-*` names; mapping to existing chn-*
      tokens preserves visual parity with legacy. Light branch — values
@@ -350,6 +364,13 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     margin: 0; padding: 0; background: var(--paper-2);
     color: var(--ink); font-family: var(--chn-font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Hero/Reviews/Press blocks emit decorative blobs that intentionally
+       extend past their section edges (no `overflow: hidden` on those
+       sections — the colour story drifts into the gutter). Pin the page
+       root so that bleed never causes horizontal page scroll, especially
+       at phone widths where ~120px of blob offset would otherwise be
+       enough to spawn a scroll bar. */
+    overflow-x: clip;
     /* Fluid base font-size — scales between 16px on phones and 18px on
        1440px+ desktops. All elements that don't declare a font-size
        explicitly inherit this floor; combined with the per-class bumps
@@ -629,21 +650,83 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
        still has room to breathe). */
     padding-block: clamp(40px, 6vw, 72px) clamp(40px, 6vw, 56px);
     padding-inline: var(--gutter);
-    /* `min(480px, 100%)` lets the widget column shrink below 480px on
-       tablets/phones without overflowing. The 1fr text column shrinks
-       with it, then we stack at the breakpoint below. */
+    /* Desktop is a single-row, two-column grid: left column = full
+       headline stack (eyebrow + h1 + dek + CTA + Trustpilot, flowing
+       naturally inside `.hero-leftcol`); right column = calculator.
+       The two-row sandwich layout that lived here previously forced
+       the headbottom half to bottom-align to the widget, creating a
+       hard-to-justify whitespace gap between h1 and dek. */
     display: grid;
     grid-template-columns: 1fr min(480px, 42%);
+    grid-template-areas: "leftcol widget";
     gap: clamp(32px, 5vw, 64px);
     align-items: start;
   }
-  /* Below the tablet threshold the side-by-side layout doesn't fit the
-     headline + widget at readable sizes — stack and centre the widget. */
+  .hero-leftcol {
+    grid-area: leftcol;
+    /* Stretch the left column to match the calculator's height even
+       though `.hero` uses `align-items: start`. Combined with the
+       `margin-top: auto` on the trust strip below, that puts the
+       Trustpilot divider exactly on the calculator's bottom edge —
+       a designed bookend rather than a free-floating row. */
+    align-self: stretch;
+    display: flex; flex-direction: column;
+    /* Single seam between headtop and headbottom. Sums with the dek's
+       own `margin-top: 28px` for a ~48px headline→dek beat — about
+       half-a-line of the 88px headline, enough to mark the section
+       break without re-introducing the old sandwich gap. */
+    gap: clamp(16px, 1.5vw, 20px);
+  }
+  .hero-headtop    { /* in-flow inside .hero-leftcol */ }
+  /* `.hero-eyebrow` is the wrapper around the "Trusted globally · since
+     2017" pill. On desktop it sits inside `.hero-leftcol` (display:
+     flex), so it lines up above `.hero-headtop`. On mobile (below), it
+     moves into its own grid area between the calculator and the dek. */
+  .hero-eyebrow { /* in-flow inside .hero-leftcol on desktop */ }
+  /* Headbottom fills whatever vertical space is left after headtop +
+     the leftcol gap. Inside, dek and CTA stack at the top in natural
+     reading order; the Trustpilot row uses `margin-top: auto` so it
+     drops to the bottom of headbottom, which in turn ends at the
+     calculator's bottom edge. */
+  .hero-headbottom {
+    flex: 1 1 auto;
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .hero-headbottom .hero-trust--desktop { margin-top: auto; }
+  .hero > .widget,
+  .hero > .swap-widget-skeleton { grid-area: widget; align-self: start; }
+  /* Tablet collapse — headline halves and widget reshape but stay in the
+     desktop visual order (top above, calc on the right, bottom below).
+     The leftcol wrapper drops out of layout (`display: contents`) so
+     headtop and headbot become direct grid children and the three-row
+     area definition below places them around the widget. */
   @media (max-width: 1024px) {
     .hero {
       grid-template-columns: 1fr;
+      /* Mobile reading order — headline first, then the calculator (the
+         single most-used surface), then the "Trusted globally · since
+         2017" badge (social proof beat right under the action), then
+         the dek + CTA + Trustpilot rating below. */
+      grid-template-areas:
+        "headtop"
+        "widget"
+        "eyebrow"
+        "headbot";
       justify-items: stretch;
+      gap: 24px;
     }
+    .hero-leftcol { display: contents; }
+    .hero-headtop    { grid-area: headtop; }
+    .hero-eyebrow {
+      grid-area: eyebrow;
+      /* The pill is `inline-flex` so centering the wrapper centres the
+         badge horizontally — matches the centred h1 and dek alignment
+         on mobile. */
+      display: flex;
+      justify-content: center;
+    }
+    .hero-headbottom { grid-area: headbot; }
     .hero > .widget,
     .hero > .swap-widget-skeleton {
       width: min(480px, 100%);
@@ -684,6 +767,11 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     margin-top: 28px; max-width: 520px;
     font-size: 18px; line-height: 1.5; color: var(--ink-2); font-weight: 400;
   }
+  /* Lead phrase before the em dash — pulls the eye into the first beat
+     of the value prop. Stronger ink + weight instead of a colour
+     accent, which would otherwise compete with the green ".money" in
+     the headline above. */
+  .hero-dek-lead { color: var(--ink); font-weight: 500; }
   .hero-cta { display: flex; gap: 10px; margin-top: 32px; }
 
   /* Hero secondary CTA — accent gradient ring around an inner pill. */
@@ -711,7 +799,25 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     transition: background 250ms ease;
   }
   .btn-hero::before { display: none; }
-  .btn-hero-text { position: relative; z-index: 1; }
+  /* Label picks up the same blue→cyan→mint sweep as the gradient ring,
+     painted through the glyphs. Light theme gets a darkened variant of
+     the same stops — the default accent (#4EA1F5 → #76EAB1) bottoms out
+     at a near-white mint on a white pill, which reads as broken style
+     rather than a designed colour. Dark theme keeps the bright stops
+     since the inner pill there is #1a1a22. */
+  .btn-hero-text {
+    position: relative; z-index: 1;
+    background: linear-gradient(135deg, #1F66CC 0%, #2592B0 55%, #1E8C58 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  :where(html,body)[data-theme="dark"] .btn-hero-text {
+    background: var(--chn-gradient-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .btn-hero-arrow {
     position: relative; z-index: 1;
     width: 28px; height: 28px; border-radius: 999px;
@@ -727,30 +833,57 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   :where(html,body)[data-theme="dark"] .btn-hero-arrow { color: #fff; }
 
   .hero-trust {
-    margin-top: 48px; padding-top: 28px;
+    margin-top: 28px; padding-top: 20px;
+    /* Hairline divider that visually demotes the trust strip below the
+       primary CTA without using a full section break. Same `--line`
+       token as the rest of the page so light/dark both behave. */
     border-top: 1px solid var(--line);
-    display: flex; align-items: center; gap: 24px;
-    /* Allow the trustpilot row to wrap onto a second line on narrow
-       viewports — at 16px+ font-size the "4.7 out of 5 · based on N
-       reviews" string is too wide to fit alongside the logo + stars in
-       a phone-width column. */
-    flex-wrap: wrap;
+    /* Pin the widget container to the left edge of the headbottom column
+       on desktop. Trustpilot's iframe stretches to whatever width its
+       host gives it; capping the host at the typical Micro Trust Score
+       width keeps the bar from drifting toward the centre of a wide
+       column. */
+    display: flex; justify-content: flex-start;
   }
-  .trust-stars { display: flex; gap: 1px; }
-  .trust-stars span {
-    width: 18px; height: 18px; background: #00B67A; display: grid; place-items: center;
+  /* Desktop renders the Micro Trust Score one-liner; mobile swaps to the
+     footer's Mini TrustBox (stacked score + stars + count). Phone
+     breakpoint (900px) handles the actual swap below — these defaults
+     keep desktop shape correct and hide the mobile mount. */
+  .hero-trust--mobile { display: none; }
+  /* The Trustpilot bootstrap script swaps `.trustpilot-widget` into an
+     iframe at runtime. Reserve vertical space matching the rendered
+     template so the surrounding layout doesn't shift the moment the
+     widget hydrates. */
+  .hero-trust--desktop .trustpilot-widget {
+    min-height: 24px;
+    /* 240px is enough for the Micro Trust Score to render
+       "Excellent 4.6 out of 5 ★ Trustpilot" with `alignment="left"`
+       set. The iframe's content sits flush with the left edge — same
+       x as the Open account button above. Wider iframes left
+       whitespace on the left because Trustpilot centers content by
+       default. */
+    width: 240px; max-width: 240px;
   }
-  .trust-stars span svg { width: 12px; height: 12px; }
-  .trust-text { font-size: 16px; color: var(--ink-2); line-height: 1.4; }
-  .trust-text strong { color: var(--ink); font-weight: 700; }
-  .trust-logo {
-    font-weight: 800; color: var(--ink); font-size: 16px;
-    display: flex; align-items: center; gap: 6px; letter-spacing: -0.01em;
+  .hero-trust--mobile .trustpilot-widget {
+    min-height: 150px;
+    width: 120px;
   }
-  .trust-logo::before {
-    content: ''; width: 16px; height: 16px;
-    background: #00B67A;
-    clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  /* Strip every browser-default focus indicator — the dotted rectangle
+     Chrome draws around the injected iframe (and around the fallback
+     anchor pre-bootstrap) reads as a styling bug here. Cover both the
+     static and the :focus / :focus-visible / :focus-within states,
+     plus `box-shadow` which is how some browsers draw focus rings. */
+  .trustpilot-widget,
+  .trustpilot-widget *,
+  .trustpilot-widget iframe,
+  .trustpilot-widget *:focus,
+  .trustpilot-widget *:focus-visible,
+  .trustpilot-widget *:focus-within {
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+  .trustpilot-widget a {
+    color: var(--ink-3); font-size: 14px; text-decoration: none;
   }
 
   /* ───────────── WIDGET ───────────── */
@@ -933,6 +1066,106 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   :where(html,body)[data-theme="dark"] .fees-tip-row { color: var(--ink-2); }
   :where(html,body)[data-theme="dark"] .fees-tip-row span:last-child { color: var(--ink); }
   :where(html,body)[data-theme="dark"] .fees-tip-foot { color: var(--ink-3); border-color: var(--line); }
+
+  /* ── Loans-mode chrome ───────────────────────────────────────────────
+     Reuses tooltip mechanics from `.fees-pill` (hover/focus shows
+     absolutely-positioned bubble) so terms and APR plates read in the
+     same visual language as the rest of the calculator. */
+  .loan-terms {
+    display: flex; flex-direction: column;
+    gap: 6px;
+    margin: 8px 14px;
+    padding: 10px 12px;
+    border-left: 2px solid var(--line);
+    color: var(--ink-3);
+    font-size: 13px; line-height: 1.3;
+  }
+  .loan-terms-row {
+    position: relative;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
+    outline: none;
+    cursor: help;
+  }
+  .loan-terms-label {
+    border-bottom: 1px dashed var(--ink-3);
+    line-height: 1.1;
+  }
+  .loan-terms-value {
+    color: var(--ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .loan-terms-infinity { font-size: 16px; line-height: 1; }
+  .loan-terms-tip {
+    position: absolute; bottom: calc(100% + 8px); left: 0;
+    width: 240px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 12px 36px -8px rgba(15,15,20,0.32), 0 2px 8px rgba(15,15,20,0.12);
+    opacity: 0; pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 160ms ease, transform 160ms ease;
+    z-index: 20;
+    font-size: 13px; line-height: 1.4; font-weight: 500;
+    cursor: default;
+  }
+  .loan-terms-row:hover .loan-terms-tip,
+  .loan-terms-row:focus .loan-terms-tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  :where(html,body)[data-theme="dark"] .loan-terms-tip {
+    background: var(--paper-2); color: var(--ink);
+    box-shadow: 0 12px 36px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--line);
+  }
+
+  /* APR plate — small floating badge below the field stack. */
+  .loan-apr {
+    position: relative;
+    display: inline-flex; align-items: baseline; gap: 6px;
+    margin: 6px 0 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--paper-2, rgba(0,0,0,0.04));
+    color: var(--ink-2);
+    font-size: 13px; font-weight: 500;
+    outline: none;
+    cursor: help;
+  }
+  .loan-apr-value {
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .loan-apr-title { color: var(--ink-3); letter-spacing: 0.04em; }
+  .loan-apr[data-loading] .loan-apr-value { opacity: 0.5; }
+  .loan-apr-tip {
+    position: absolute; bottom: calc(100% + 8px); left: 0;
+    width: 240px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 12px 36px -8px rgba(15,15,20,0.32), 0 2px 8px rgba(15,15,20,0.12);
+    opacity: 0; pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 160ms ease, transform 160ms ease;
+    z-index: 20;
+    font-size: 13px; line-height: 1.4; font-weight: 500;
+    cursor: default;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .loan-apr-tip-title { font-size: 14px; font-weight: 700; }
+  .loan-apr-tip-body { color: rgba(255,255,255,0.78); }
+  .loan-apr:hover .loan-apr-tip,
+  .loan-apr:focus .loan-apr-tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  :where(html,body)[data-theme="dark"] .loan-apr-tip {
+    background: var(--paper-2); color: var(--ink);
+    box-shadow: 0 12px 36px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--line);
+  }
+  :where(html,body)[data-theme="dark"] .loan-apr-tip-body { color: var(--ink-2); }
+
   .swap-amount {
     border: 0; background: transparent; outline: 0;
     font-family: inherit; font-size: 32px; font-weight: 600;
@@ -959,6 +1192,46 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
      keeps the input the same height regardless of which step we land on. */
   .swap-amount[data-size="md"] { font-size: 24px; }
   .swap-amount[data-size="sm"] { font-size: 18px; }
+  /* Promo-applied tint on the "You get" amount. The brand green reads as
+     "boost" / "you saved" — same hue family as the active-CTA gradient
+     so the highlight stays on-brand. Keep the weight + size identical to
+     the default state so the row height doesn't change. */
+  .swap-amount[data-promo] {
+    color: #00a85f;
+  }
+  :where(html,body)[data-theme="dark"] .swap-amount[data-promo] {
+    color: #4cd99a;
+  }
+  /* Strikethrough "what you'd get without the promo" line. Sits under
+     the amount + picker row, right-aligned so it visually anchors to
+     the receive-amount column above. The `<s>` does the actual line
+     work; the wrapper handles alignment / spacing. */
+  .swap-promo-strike {
+    margin-top: 2px;
+    padding: 0 4px;
+    text-align: right;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .swap-promo-strike s { text-decoration-thickness: 1px; }
+  /* Promo-applied FeesPill variant — swaps the muted caption colour for
+     the brand promo gradient applied via `background-clip: text`. The
+     icon next to it inherits `currentColor` from the parent span, so it
+     can't take a gradient directly; we drop its opacity so the pill
+     reads as gradient label + soft icon rather than two competing tones. */
+  .fees-pill[data-promo] {
+    background-image: linear-gradient(135deg, #4ea1f5 0%, #5bc0de 50%, #76eab1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 600;
+  }
+  .fees-pill[data-promo] svg {
+    color: #00c26f;
+    opacity: 0.9;
+  }
   /* Center the amount and the currency picker pill against each other.
      `flex-end` was inherited from an earlier iteration where the label
      and the row competed for vertical space; with the label now in
@@ -1142,34 +1415,79 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     color: #fff; font-size: 16px; font-weight: 800;
   }
 
-  /* Dropdown list — popover anchored under the picker shell. The shell
-     above already hosts the search input, so this is the list-only part. */
-  .cur-list {
-    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
-    list-style: none; margin: 0; padding: 4px 0;
+  /* Dropdown list — rendered inside `<Overlay mode="popover">` which
+     portals the panel to the overlay root and positions it via Floating
+     UI. This file owns the panel skin + list scroll only; position +
+     z-index live on the overlay primitive. */
+  .cur-overlay {
+    display: flex; flex-direction: column; min-height: 0;
     background: var(--paper); border-radius: 14px;
     box-shadow:
       0 1px 0 rgba(15,15,20,0.04),
       0 12px 32px rgba(15,15,20,0.16),
       inset 0 0 0 1px var(--line);
-    z-index: 60;
-    max-height: 360px; overflow-y: auto;
-    overscroll-behavior: contain;
-    /* Brief fade-in so the list doesn't pop in cold while the search bar
-       is still sliding in. */
+    overflow: hidden;
     animation: cur-list-in 180ms ease-out both;
   }
-  @keyframes cur-list-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  :where(html,body)[data-theme="dark"] .cur-list {
+  :where(html,body)[data-theme="dark"] .cur-overlay {
     background: #1A1A22;
     box-shadow:
       0 1px 0 rgba(0,0,0,0.4),
       0 12px 32px rgba(0,0,0,0.5),
       inset 0 0 0 1px rgba(255,255,255,0.08);
   }
+  /* Mobile fullscreen variant — full bleed, no corner radius or shadow. */
+  .overlay-panel-fullscreen.cur-overlay {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .cur-list {
+    list-style: none; margin: 0; padding: 4px 0;
+    flex: 1; min-height: 0; overflow-y: auto;
+    overscroll-behavior: contain;
+    max-height: 360px;
+  }
+  /* Fullscreen: list owns the rest of the viewport, drop the desktop cap. */
+  .overlay-panel-fullscreen .cur-list { max-height: none; }
+  /* Fade-only — `transform` is owned by Floating UI (the inline
+     `transform: translate(x,y)` is how the panel anchors to the trigger).
+     Animating `transform` here would override that and snap the panel to
+     0,0 as the keyframe lands. */
+  @keyframes cur-list-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* In-overlay search bar. Only visible when the overlay rendered as a
+     mobile fullscreen sheet — on desktop the existing `.cur-search-input`
+     in `.cur-shell` slides in over the amount field instead. */
+  .cur-mobile-search { display: none; }
+  .overlay-panel-fullscreen .cur-mobile-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .overlay-panel-fullscreen .cur-mobile-search .cur-search-input {
+    flex: 1;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    font: inherit; font-size: 16px;
+    outline: 0;
+  }
+  .overlay-panel-fullscreen .cur-mobile-search .cur-search-input::placeholder {
+    color: var(--ink-3);
+  }
+  .cur-mobile-close {
+    flex: 0 0 auto;
+    background: transparent; border: 0; cursor: pointer;
+    font-size: 24px; line-height: 1;
+    color: var(--ink-3);
+    padding: 4px 8px; border-radius: 8px;
+  }
+  .cur-mobile-close:hover { color: var(--ink); background: var(--paper-2); }
   /* Picker rows are dense data — readability floor is relaxed here in
      favour of fitting more rows on screen at a glance. The "16px floor"
      elsewhere doesn't apply to a list-of-coins display where the user
@@ -2380,21 +2698,22 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
     max-width: 1360px; margin: 0 auto;
   }
+  /* Simple Earn/Spend/Send cards — same dark surface as `.fb-card--liquid`
+     and `.fb-trade-card` so every tab in the FB block carries the same
+     dark canvas regardless of page theme. The tonal `.fb-vis-bg` paints
+     each card's distinct radial accent over this base. */
   .fb-card {
     border-radius: 22px; overflow: hidden;
-    background: var(--paper);
-    color: var(--ink);
-    display: flex; flex-direction: column;
-    transition: transform 250ms ease, box-shadow 250ms ease;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 0 1px var(--line-soft), 0 12px 32px -16px rgba(15,15,20,0.10);
-  }
-  :where(html,body)[data-theme="dark"] .fb-card {
     background: #14141A;
     color: #fff;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(15,15,20,0.30);
+    display: flex; flex-direction: column;
+    transition: transform 250ms ease, box-shadow 250ms ease;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 12px 32px -16px rgba(15,15,20,0.40);
   }
-  .fb-card:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 0 1px var(--line), 0 22px 48px -16px rgba(15,15,20,0.18); }
-  :where(html,body)[data-theme="dark"] .fb-card:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 22px 48px -16px rgba(15,15,20,0.45); }
+  .fb-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 22px 48px -16px rgba(15,15,20,0.55);
+  }
 
   .fb-vis {
     aspect-ratio: 1 / 1.05;
@@ -2522,24 +2841,910 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
     color: rgba(255,255,255,0.7);
   }
 
-  /* Caption */
-  .fb-caption {
-    padding: 22px 22px 24px;
-    background: var(--paper);
+  /* Unified caption (Featured + Trade). Transparent background so the
+     card shell's gradient + accent glow show through; padding tightened
+     so the visual area has more room and every card hits the same
+     bottom-edge rhythm. */
+  .fb-caption,
+  .fb-trade-caption {
+    padding: 18px 22px 22px;
+    background: transparent;
+    position: relative;
+    z-index: 1;
   }
-  :where(html,body)[data-theme="dark"] .fb-caption {
-    background: linear-gradient(180deg, #14141A 0%, #0E0E12 100%);
+  .fb-caption-title,
+  .fb-trade-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    margin: 0 0 4px;
+    /* White in both themes — the card surface is dark in both themes
+       now (see unified `.fb-card--liquid, .fb-trade-card` rule). */
+    color: #fff;
   }
-  .fb-caption-title {
-    font-size: 18px; font-weight: 600; line-height: 1.25;
-    margin: 0 0 6px; color: var(--ink); letter-spacing: -0.015em;
+  .fb-caption-sub,
+  .fb-trade-sub {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+    color: rgba(255,255,255,0.65);
+    /* Reserve two lines so single-line subs (`Trade live odds on
+       crypto, politics, sports.`) match the height of two-liners
+       (`Non-custodial Web3 wallet — keys in your hand.`) across the
+       grid row. Without this the prediction card ends up ~20px
+       shorter than its siblings. */
+    min-height: calc(14px * 1.45 * 2);
   }
-  :where(html,body)[data-theme="dark"] .fb-caption-title { color: #fff; }
-  .fb-caption-sub {
-    font-size: 16px; color: var(--ink-3);
-    margin: 0; line-height: 1.45;
+  :where(html,body)[data-theme="dark"] .fb-caption-sub,
+  :where(html,body)[data-theme="dark"] .fb-trade-sub {
+    color: rgba(255,255,255,0.55);
   }
-  :where(html,body)[data-theme="dark"] .fb-caption-sub { color: rgba(255,255,255,0.55); }
+
+  /* ───────────── Unified card shell (Featured + Trade) ──────────────────
+     One rhythm across every tab: same dark base, same radius, same
+     aspect-ratio, same caption typography. The per-card differentiation
+     is a single faint accent glow in the top-right corner (via the
+     `--card-accent` CSS variable) — no more conic auras, grain layers,
+     or full-bleed tonal gradients fighting each other.
+     The same selector targets `.fb-card--liquid` (Featured) and
+     `.fb-trade-card` (Trade) so both surfaces stay in lockstep when
+     this rule changes. */
+  .fb-card--liquid,
+  .fb-trade-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 22px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 1 / 1.15;
+    transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 280ms ease;
+  }
+  /* Cards keep a dark surface in BOTH themes — every internal mock
+     (prediction question, RWA list, marker pills, Perps pings, wallet
+     card, payment receipt) is white-text-on-dark-glass by design.
+     The caption strip below stays dark too so the whole card reads as
+     one continuous "phone-screen" surface across light and dark
+     page themes. */
+  .fb-card--liquid,
+  .fb-trade-card {
+    background: linear-gradient(180deg, #14141C 0%, #0A0A12 100%);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 22px 56px -26px rgba(0,0,0,0.5);
+  }
+  .fb-card--liquid:hover,
+  .fb-trade-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 30px 68px -22px rgba(0,0,0,0.6);
+  }
+  /* Diagonal shine sweep that crosses the card on hover. Sits on
+     `::after` so the per-card `::before` (accent glow) is undisturbed.
+     `overflow: hidden` on the card shell clips the sheen to the rounded
+     edge; `pointer-events: none` keeps the shine from intercepting
+     clicks on the underlying link. */
+  .fb-card--liquid::after,
+  .fb-trade-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 35%,
+      rgba(255,255,255,0.10) 48%,
+      rgba(255,255,255,0.22) 50%,
+      rgba(255,255,255,0.10) 52%,
+      transparent 65%
+    );
+    transform: translateX(-110%);
+    pointer-events: none;
+    z-index: 5;
+    border-radius: inherit;
+    transition: transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .fb-card--liquid:hover::after,
+  .fb-trade-card:hover::after {
+    transform: translateX(110%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fb-card--liquid::after,
+    .fb-trade-card::after { display: none; }
+  }
+  /* Subtle per-card accent — a single faint glow in the top-right
+     corner. Replaces the previous heavy radial-gradient backgrounds
+     so all cards share the same dark base and only this hint of
+     colour tells them apart. */
+  .fb-card--liquid::before,
+  .fb-trade-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 38% at 85% 10%, var(--card-accent, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .fb-card--liquid.tone-plum,
+  .fb-trade-card.tone-plum { --card-accent: rgba(225,160,200,0.22); }
+  .fb-card--liquid.tone-amber { --card-accent: rgba(245,195,120,0.22); }
+  .fb-card--liquid.tone-teal { --card-accent: rgba(120,220,200,0.20); }
+  .fb-card--liquid.tone-graphite { --card-accent: rgba(160,180,255,0.18); }
+
+  /* `.fb-liquid-vis` is the visual area above the caption. It flexes to
+     fill whatever's left after `.fb-caption` claims its space, so the
+     card stays a fixed aspect-ratio and the visual content scales with
+     viewport width.
+     A dark gradient background is applied here in BOTH themes — every
+     internal mock (prediction question, RWA list, payment receipt,
+     wallet mock) is designed for white-text-on-dark-glass and would be
+     unreadable when the surrounding `.fb-card--liquid` shell is the
+     light-theme white paper. Keeping the vis dark also restores the
+     "phone screen on a white pedestal" feel: dark device, light caption
+     plate underneath. */
+  .fb-liquid-vis {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    z-index: 1;
+    background: linear-gradient(180deg, #14141C 0%, #0A0A12 100%);
+  }
+  /* Re-host the per-card accent glow inside the vis so it still paints
+     over the dark canvas. The original `.fb-card--liquid::before` sits
+     behind this opaque layer and would otherwise be invisible. */
+  .fb-liquid-vis::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 38% at 85% 10%, var(--card-accent, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* Soft hairline separating the dark vis from the light caption plate
+     in light theme. In dark theme the whole card is dark, so the divider
+     blends into the same surface and is invisible by design. */
+  .fb-liquid-vis::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Prediction card layout. The question is the hero; outcomes ride
+     below as paired chips so the YES/NO odds register at a glance.
+     `.fb-pred-head` is a horizontal row that pairs the question with the
+     event thumbnail — the image takes the top-right corner and the text
+     wraps under/around it.
+     Horizontal inset matches every other Featured / Trade mock + caption
+     (22px) so titles line up vertically across all 4 cards. */
+  .fb-pred-stack {
+    position: absolute;
+    /* 28px inset (was 22px) — pulls the question + outcome chips off
+       the card's rounded corners so they read as a floating composition
+       inside the dark canvas rather than as content kissing the rim.
+       Matches the new 28px rhythm shared by `.fb-rwa-list`,
+       `.fb-pay-receipt`, and `.fb-wallet-card`. */
+    inset: 28px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .fb-pred-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .fb-pred-question {
+    flex: 1;
+    font-size: 22px;
+    line-height: 1.18;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+    /* Cap to three lines for long markets, ellipsize the rest. */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Event thumbnail — rounded, with a soft outer glow + rim so it reads as
+     a "frosted glass badge" rather than a flat sticker. `object-fit:cover`
+     keeps the bucket-side aspect-ratio honest. */
+  .fb-pred-image {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: rgba(255,255,255,0.10);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.18) inset,
+      0 8px 24px -6px rgba(0,0,0,0.45),
+      0 0 24px -4px rgba(255,180,210,0.35);
+  }
+  .fb-pred-outcomes {
+    display: flex;
+    gap: 8px;
+  }
+  .fb-pred-outcome {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .fb-pred-outcome strong {
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+  .fb-pred-outcome--yes {
+    background: rgba(78,217,160,0.22);
+    border-color: rgba(78,217,160,0.45);
+    color: #4ED9A0;
+  }
+  .fb-pred-outcome--yes strong { color: #fff; }
+  .fb-pred-meta {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    font-weight: 600;
+  }
+
+  /* RWA card: candles fill the WHOLE backdrop, ticker list reads on top
+     with backdrop-blur so the live-market wobble is visible behind a soft
+     frost. Chart sits at z-index 0 so the aura/grain/list all overlay it. */
+  .fb-rwa-chart {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.65;
+    /* Push the chart bottom-anchored so the wicks read against the dark
+       lower half — the radial aura is brightest top-right and would wash
+       out a top-aligned chart. */
+    display: flex;
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+  .fb-rwa-chart svg { width: 100%; height: 86%; }
+  /* Featured-tab content alignment: the primary mock (RWA list, Payment
+     receipt, Wallet card) is bottom-anchored inside the visual area with
+     the same `inset: auto 22px 22px 22px` rhythm — same 22px as the
+     captions below them, so every horizontal edge in the card column
+     lines up. Predictions card uses an internal flex stack so its chips
+     naturally end at the bottom too. */
+  .fb-rwa-list {
+    position: absolute;
+    /* Bottom-anchored so the plate's BOTTOM edge lines up with the
+       bottom of the YES/NO chips on the Prediction card. The YES/NO row
+       sits ~60px below the vis-area's vertical centre once head height
+       (image-driven, ~78px) and the `gap: 16px` minimums are factored
+       in, so `bottom: calc(50% - 60px)` puts this plate's bottom on the
+       same horizontal line as the YES/NO chip bottoms. RWA / Payment /
+       Wallet plates all "stand" at the same level regardless of their
+       own height. (Empirically tuned — see verification trace.) */
+    inset: auto 28px calc(50% - 60px) 28px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(20,20,26,0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 12px 14px;
+  }
+  .fb-rwa-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 12px;
+    align-items: baseline;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fb-rwa-name { color: #fff; }
+  .fb-rwa-ticker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.5);
+    font-weight: 700;
+  }
+  .fb-rwa-change.up { color: #4ED9A0; }
+  .fb-rwa-change.dn { color: #FF7A5C; }
+  .fb-rwa-change { color: rgba(255,255,255,0.55); }
+
+  /* Payment-link card: a faux receipt floating on the glass. Same
+     `inset: auto 22px 22px 22px` rhythm as the RWA list and wallet
+     mock so the three Featured cards bottom-align in lock-step. */
+  /* Dark-glass receipt — same surface treatment as the RWA list
+     (`.fb-rwa-list`) so the three Featured mocks (RWA / Payment /
+     Wallet) read as one family of frosted plates floating on the dark
+     canvas. The pale-paper variant looked too dissimilar to the
+     translucent-dark plates on the other cards. */
+  .fb-pay-receipt {
+    position: absolute;
+    /* Bottom-anchored so the plate's BOTTOM edge lines up with the
+       bottom of the YES/NO chips on the Prediction card. The YES/NO row
+       sits ~60px below the vis-area's vertical centre once head height
+       (image-driven, ~78px) and the `gap: 16px` minimums are factored
+       in, so `bottom: calc(50% - 60px)` puts this plate's bottom on the
+       same horizontal line as the YES/NO chip bottoms. RWA / Payment /
+       Wallet plates all "stand" at the same level regardless of their
+       own height. (Empirically tuned — see verification trace.) */
+    inset: auto 28px calc(50% - 60px) 28px;
+    z-index: 2;
+    padding: 14px 16px;
+    background: rgba(20,20,26,0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    color: #fff;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.32);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .fb-pay-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600; color: #fff;
+  }
+  .fb-pay-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0,194,111,0.18);
+  }
+  .fb-pay-amount {
+    font-size: 26px; font-weight: 700; color: #fff;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.015em;
+  }
+  .fb-pay-amount em {
+    font-size: 14px; font-weight: 600; font-style: normal;
+    color: rgba(255,255,255,0.55); margin-left: 4px;
+  }
+  .fb-pay-meta { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+  /* NOW Wallet card — fake floating wallet card with chip + chains.
+     Same bottom-anchored inset as the RWA list and payment receipt so
+     all four Featured cards share one alignment rhythm. */
+  /* Wallet "card" — keeps the inner chip + glow accents so the mock
+     still reads as a payment card silhouette, but the surface itself
+     now matches `.fb-rwa-list` / `.fb-pay-receipt` (dark glass with a
+     hairline border) so all three Featured plates share one material. */
+  .fb-wallet-card {
+    position: absolute;
+    /* Bottom-anchored so the plate's BOTTOM edge lines up with the
+       bottom of the YES/NO chips on the Prediction card. The YES/NO row
+       sits ~60px below the vis-area's vertical centre once head height
+       (image-driven, ~78px) and the `gap: 16px` minimums are factored
+       in, so `bottom: calc(50% - 60px)` puts this plate's bottom on the
+       same horizontal line as the YES/NO chip bottoms. RWA / Payment /
+       Wallet plates all "stand" at the same level regardless of their
+       own height. (Empirically tuned — see verification trace.) */
+    inset: auto 28px calc(50% - 60px) 28px;
+    z-index: 2;
+    border-radius: 16px;
+    background: rgba(20,20,26,0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.10);
+    padding: 14px 16px;
+    color: #fff;
+    overflow: hidden;
+  }
+  .fb-wallet-glow {
+    position: absolute;
+    inset: -40% -10% auto auto;
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(circle, rgba(120,220,200,0.55), transparent 60%);
+    filter: blur(20px);
+    pointer-events: none;
+  }
+  /* NOW Wallet wordmark — icon + "NOW Wallet" lettering in the brand
+     blue→green ramp. Native 127×42, rendered at 28px height (width
+     auto) so the wordmark reads as a brand stamp without dominating
+     the plate. Sits above the radial glow so the strokes hold their
+     colour against the bright halo behind it. */
+  .fb-wallet-logo {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: auto;
+    height: 28px;
+  }
+  .fb-wallet-balance {
+    position: relative;
+    z-index: 1;
+    /* Closer rhythm now that the address row is gone — the balance sits
+       directly above the chain pills with no intermediate line. */
+    margin-top: 14px;
+    font-size: 24px; font-weight: 700;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+    color: #FFFFFF;
+  }
+  .fb-wallet-chain-row {
+    position: relative;
+    z-index: 1;
+    margin-top: 10px;
+    display: flex; gap: 6px;
+  }
+  .fb-wallet-chain {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #fff;
+  }
+  .fb-wallet-chain--more {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ───────────── Trade row: 4 cards, each with its own chart slice ─────
+     Grid: 4 equal columns. Cards 1-3 (Spot, Cross-chain swap, Perps)
+     each render one viewBox-window of the same BTC chart; the line
+     LOOKS continuous within a card but is clipped at card boundaries,
+     so the 16px inter-card gaps read as empty page surface — restoring
+     per-card weight. The 4th card (Predictions) sits outside the chart
+     pattern with its own plum gradient. */
+  .fb-trade-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 1360px;
+    margin: 0 auto;
+  }
+  /* Per-card chart slice. Fills the card from the bottom edge upward
+     (the curve always rides the lower two-thirds). `overflow: hidden`
+     hides anything outside the slice's viewBox at card boundaries,
+     which is what gives us the gap-cuts between cards. */
+  .fb-trade-cardchart {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .fb-trade-cardchart svg {
+    position: absolute;
+    inset: auto 0 0 0;
+    width: 100%;
+    /* Raised from 72% → 88% — the chart now climbs higher up the card
+       and the marker pill at the top floats over its upper reaches
+       rather than sitting on a separate empty band above. The caption
+       gradient fade still keeps the curve from running under the
+       title. */
+    height: 88%;
+  }
+  /* `.fb-trade-card` shell is inherited from the unified rule above —
+     same base, border, radius, aspect, shadow as `.fb-card--liquid`.
+     The only Trade-specific bit is the chart-slice + overlay rhythm
+     plus a per-card `--card-accent` variable so the same corner glow
+     the Featured cards use also tints each Trade card. */
+  .fb-trade-card {
+    padding: 0;
+  }
+  /* Per-card accent — matches the marker dot tone painted inside each
+     SVG slice, so the corner glow visually echoes the chart point. */
+  .fb-trade-card.tone-spot { --card-accent: rgba(0,194,111,0.18); }
+  .fb-trade-card.tone-swap { --card-accent: rgba(36,149,200,0.20); }
+  /* Perps glow used to be amber (`rgba(255,180,90,0.22)`) — that fought
+     the Perps card's green "+10 USDC" funding pings on the same canvas.
+     Switched to the same brand-green ramp the pings use so the corner
+     halo and the floating notification share one tone. */
+  .fb-trade-card.tone-perps { --card-accent: rgba(0,194,111,0.22); }
+  .fb-trade-card--solo { --card-accent: rgba(225,160,200,0.22); }
+  /* Chart slice is pinned flush to the card edges — the curve LOOKS
+     continuous across the three Spot/Cross-chain/Perps cards because the
+     viewBox math depends on the card spanning the same horizontal
+     fraction of the full chart. Pulling the SVG inward broke that
+     illusion; only the floating marker pills should be inset, not the
+     chart itself. */
+  .fb-trade-card .fb-trade-cardchart { inset: 0; }
+  .fb-trade-card .fb-trade-cardchart svg {
+    inset: auto 0 0 0;
+    width: 100%;
+  }
+  /* Caption sits over the chart, so we fade the chart out into the card
+     background just before reaching the title — readable text without a
+     hard rectangle behind it. The unified `.fb-caption, .fb-trade-caption`
+     rule sets `background: transparent`; this rule layers a gradient on
+     top of that transparent fill. The extra top padding (40 vs 18) gives
+     the fade room to dissolve before the title sits down. */
+  .fb-trade-caption {
+    padding: 40px 22px 22px;
+    /* Fades the chart curve into the card's dark surface before the
+       title sits down. Cards are dark in BOTH themes now (see unified
+       `.fb-card--liquid, .fb-trade-card` rule), so the gradient
+       terminates at the same `#0A0A12` regardless of page theme. */
+    background: linear-gradient(180deg, transparent 0%, #0A0A12 55%);
+    z-index: 2;
+  }
+  .fb-trade-overlay {
+    flex: 1 1 auto;
+    position: relative;
+    /* 28px padding (was 22) — pushes the marker pill / Perps ping stack
+       off the card's rounded corners so they sit as a floating
+       annotation inside the dark canvas. The chart slice underneath
+       runs flush to the edges; only the absolute-positioned pills sit
+       within this padded box, so the curve and the pill no longer
+       crowd the same gutter. Matches the 28px rhythm shared by
+       `.fb-pred-stack`, `.fb-rwa-list`, `.fb-pay-receipt`, and
+       `.fb-wallet-card` on the Featured tab. */
+    padding: 28px 28px 0;
+    z-index: 1;
+  }
+  /* Annotation pill anchored to the card's top-left. Sits inside the
+     `.fb-trade-overlay` which provides 18px of inner padding, so
+     `top/left: 0` lands flush with the overlay edge (18px from the
+     card edge). Detached from the SVG dot (which marks the exact
+     chart point inside the slice) so the pill never overlaps the
+     title/caption at the bottom of the card. */
+  /* Marker pill matches the dark-glass plate language of the Featured
+     tab (`.fb-rwa-list`, `.fb-pay-receipt`, `.fb-wallet-card`) — same
+     `rgba(20,20,26,0.55)` translucent dark, same `1px solid
+     rgba(255,255,255,0.10)` hairline, same 16px blur. Pills used to flip
+     to a white surface in light theme; cards are dark in both themes
+     now so the dark-glass treatment applies uniformly.
+     Vertical anchor: bottom edge aligned with the YES/NO chip bottom
+     on the Featured Prediction card (`bottom: calc(50% - 60px)` against
+     the overlay padding box). Trade and Featured plates now sit at the
+     same horizontal level, so the eye doesn't have to jump between
+     tabs. */
+  .fb-trade-marker--corner {
+    position: absolute;
+    top: auto;
+    bottom: calc(50% - 60px);
+    /* Horizontally centred over the chart slice, matching where the
+       YES/NO chip pair sits on the Prediction card. Pills used to hug
+       the left edge — the user asked for the centred placement so the
+       three Trade cards (Spot / Cross-chain / Perps) read as one
+       balanced row. */
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(20,20,26,0.55);
+    color: #fff;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    white-space: nowrap;
+    box-shadow: 0 10px 28px -10px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .fb-trade-marker-dot {
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  /* Per-marker dot tone matches the SVG dot drawn inside the slice — the
+     pill and the chart point are visually tied by colour, even when the
+     pill is anchored to a corner several hundred pixels away. */
+  .fb-trade-marker-dot--buy {
+    background: #00C26F;
+    box-shadow: 0 0 0 3px rgba(0,194,111,0.22);
+  }
+  .fb-trade-marker-dot--swap {
+    background: #2495C8;
+    box-shadow: 0 0 0 3px rgba(36,149,200,0.22);
+  }
+  .fb-trade-marker-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.15;
+  }
+  /* Marker text colours now white-on-dark in both themes (pill surface is
+     dark glass in both themes — see `.fb-trade-marker--corner`). */
+  .fb-trade-marker-label {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+  .fb-trade-marker-meta {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.02em;
+  }
+  .fb-trade-marker-change {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .fb-trade-marker-change.up { color: #4ED9A0; }
+  .fb-trade-marker-change.dn { color: #FF7A5C; }
+  .fb-trade-price-chip {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(0,194,111,0.12);
+    border: 1px solid rgba(0,194,111,0.45);
+    border-radius: 999px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #007A34;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  :where(html,body)[data-theme="dark"] .fb-trade-price-chip {
+    background: rgba(78,217,160,0.18);
+    border-color: rgba(78,217,160,0.45);
+    color: #B6F5D8;
+  }
+  .fb-trade-price-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: #00C26F;
+    box-shadow: 0 0 0 3px rgba(0,194,111,0.22);
+  }
+  :where(html,body)[data-theme="dark"] .fb-trade-price-dot {
+    background: #4ED9A0;
+    box-shadow: 0 0 0 3px rgba(78,217,160,0.25);
+  }
+  /* Caption colour for Trade is owned by the unified `.fb-caption,
+     .fb-trade-caption` rule near the top of the FB block — no per-tab
+     overrides needed once the shell + typography are shared. */
+  /* Cards are dark in both themes, so "SOON" chip uses the same
+     translucent-white-on-dark treatment regardless of page theme. */
+  .fb-soon-chip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* ── Perpetuals card: ticking "+10 USDC" notifications ────────────────
+     Three slots, top-anchored. Each new ping slides in from the right and
+     fades out as it ages; the stack auto-cycles so the user sees a steady
+     drip of funding rewards. */
+  .fb-perp-pings {
+    position: absolute;
+    /* Anchored to the same Y line as the marker pills on Spot /
+       Cross-chain (and as the YES/NO chips on Prediction): bottom
+       edge of the ping stack lines up with the bottom of the YES/NO
+       chips via `bottom: calc(50% - 60px)`. */
+    inset: auto 0 calc(50% - 60px) 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .fb-perp-ping {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(0,194,111,0.14);
+    border: 1px solid rgba(0,194,111,0.45);
+    border-radius: 14px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    /* Light-theme default — accent-darker text reads on the mint-tinted
+       glass. Dark-theme override below switches to pale mint. */
+    color: #007A34;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 8px 24px -8px rgba(0,194,111,0.28);
+    animation: fb-perp-ping-life 4.5s ease forwards;
+    /* Horizontally centred to match the marker pills on Spot /
+       Cross-chain (`.fb-trade-marker--corner`). Used to hug the right
+       edge via `flex-end`. */
+    align-self: center;
+  }
+  :where(html,body)[data-theme="dark"] .fb-perp-ping {
+    background: rgba(0,194,111,0.16);
+    border-color: rgba(78,217,160,0.45);
+    color: #DCFCEB;
+    box-shadow: 0 8px 24px -8px rgba(0,194,111,0.35);
+  }
+  @keyframes fb-perp-ping-life {
+    0% { opacity: 0; transform: translate3d(40px, 0, 0); }
+    12% { opacity: 1; transform: translate3d(0, 0, 0); }
+    78% { opacity: 1; transform: translate3d(0, 0, 0); }
+    100% { opacity: 0; transform: translate3d(-12px, 0, 0); }
+  }
+  .fb-perp-ping-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: #00C26F;
+    box-shadow: 0 0 0 3px rgba(0,194,111,0.22);
+    align-self: center;
+  }
+  :where(html,body)[data-theme="dark"] .fb-perp-ping-dot {
+    background: #4ED9A0;
+    box-shadow: 0 0 0 3px rgba(78,217,160,0.28);
+  }
+  /* Light theme: dark accent-ink amount + muted-ink secondary tones so
+     the labels register on the mint-tinted glass. Dark theme keeps the
+     original white-on-dark chain. */
+  .fb-perp-ping-amount {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #006B3A;
+  }
+  :where(html,body)[data-theme="dark"] .fb-perp-ping-amount { color: #fff; }
+  .fb-perp-ping-unit {
+    font-size: 12px;
+    font-weight: 700;
+    color: #00A451;
+    letter-spacing: 0.04em;
+  }
+  :where(html,body)[data-theme="dark"] .fb-perp-ping-unit {
+    color: rgba(255,255,255,0.7);
+  }
+  .fb-perp-ping-label {
+    margin-left: 4px;
+    font-size: 11px;
+    color: #5b8c70;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  :where(html,body)[data-theme="dark"] .fb-perp-ping-label {
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ── Prediction-markets card (Trade-tab 4th) ──────────────────────── */
+  /* The Trade prediction card used to lay out as a flex column with
+     `justify-content: space-between`, which parked the YES/NO chip row
+     at the bottom of the overlay — visibly lower than the marker pills
+     on Spot / Cross-chain / Perps. The card now uses block layout: the
+     head sits at the top, and the chip row is absolute-positioned at
+     the same `bottom: calc(50% - 60px)` line as every other Trade pill,
+     so all four Trade cards share one horizontal baseline. */
+  .fb-trade-pred-overlay {
+    display: block;
+    position: relative;
+    padding-top: 8px;
+  }
+  .fb-trade-pred-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .fb-trade-pred-question {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+    letter-spacing: -0.01em;
+    /* 3-line cap matches the Featured prediction card so a long question
+       wraps the same way on both surfaces. */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .fb-trade-pred-image {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: rgba(255,255,255,0.10);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.20) inset,
+      0 6px 18px -4px rgba(0,0,0,0.45);
+  }
+  /* Chip row anchored at the shared YES/NO baseline. Two chips
+     side-by-side, centred within the overlay padding box (left:0 /
+     right:0 against an absolute container) so they read as a single
+     paired plate rather than two stranded buttons. */
+  .fb-trade-pred-row {
+    position: absolute;
+    bottom: calc(50% - 60px);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  /* Each chip now uses the dark-glass plate material — `rgba(20,20,26,0.55)`
+     + 16px blur + 1px white hairline — same as `.fb-trade-marker--corner`,
+     `.fb-rwa-list`, `.fb-pay-receipt`, `.fb-wallet-card`. The light
+     translucent treatment used before fought the other Trade pills'
+     darker look. */
+  .fb-trade-pred-chip {
+    flex: 0 1 auto;
+    min-width: 88px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(20,20,26,0.55);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 28px -10px rgba(0,0,0,0.5);
+  }
+  /* YES variant tints the dark-glass surface with the brand-green
+     ramp — same hue family the `.fb-perp-ping` uses, so wins read
+     consistently across the Trade tab. */
+  .fb-trade-pred-chip--yes {
+    background: rgba(0,194,111,0.22);
+    border-color: rgba(0,194,111,0.45);
+    color: #DCFCEB;
+  }
+
+  /* ── Mobile: horizontal-scroll carousel ─────────────────────────────
+     Below 960px the 4-up grid collapses to a single-row flex carousel.
+     Each card snaps in, the BTC chart still spans the first three cards
+     because absolute children inside an `overflow-x: auto` container
+     scroll together with the content. Scrollbar hidden — the snap-to
+     UX is enough discovery, a visible bar competes with the cards. */
+  @media (max-width: 960px) {
+    .fb-trade-row {
+      display: flex;
+      grid-template-columns: none;
+      gap: 14px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      /* Inline padding so the first card peeks in from the left gutter
+         (matches the page's --gutter rhythm) — pulling the cards flush
+         to the edge feels broken on a fullbleed phone screen. */
+      padding: 4px var(--gutter, 20px) 20px;
+      margin: 0 calc(-1 * var(--gutter, 20px));
+      max-width: none;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fb-trade-row::-webkit-scrollbar { display: none; }
+    .fb-trade-card {
+      flex: 0 0 calc(78% - 4px);
+      aspect-ratio: 1 / 1.15;
+      scroll-snap-align: start;
+    }
+    /* Per-card chart slices already clip themselves to card edges, so
+       nothing extra is needed at phone widths — each card carries its
+       own slice as the user swipes through the carousel. */
+  }
 
   /* ───────────── PRODUCTS BENTO ───────────── */
   .products {
@@ -2805,7 +4010,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
 }
 .section-head .label,
 .tr-head .label, .rp-head .label, .tiers-head .label,
-.rates-head .label, .ps-head .label, .apps-r .label,
+.rates-head .label, .ob-head .label, .apps-r .label,
 .reach-r .label, .family-head .label, .faq-head .label {
   font-size: 16px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--ink-3); margin-bottom: 16px;
@@ -2830,7 +4035,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
 }
 /* Used as the second-line softener inside section h2s across the homepage
    (TrackRecord, AccountTiers, AppsEverywhere, GlobalReach, ProductsFamily,
-   PrivacySecurity). Originally scoped to `.tr-head h2` — broadened so all
+   OneBalance). Originally scoped to `.tr-head h2` — broadened so all
    sections render the same visual treatment. */
 .tr-h2-light {
   color: var(--ink-3); font-weight: 300;
@@ -3239,17 +4444,17 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   margin-bottom: 24px;
 }
 .rp-tp {
-  display: inline-flex; align-items: center; gap: 12px;
-  font-size: 16px; color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--ink-2);
 }
 .rp-tp strong { color: var(--ink); font-weight: 600; }
 .rp-tp-mark {
-  width: 28px; height: 28px; border-radius: 6px;
+  width: 22px; height: 22px; border-radius: 5px;
   background: #00B67A; color: #fff;
-  display: grid; place-items: center; font-size: 18px;
+  display: grid; place-items: center; font-size: 14px;
 }
 .rp-link {
-  font-size: 16px; font-weight: 600; color: var(--ink);
+  font-size: 13px; font-weight: 600; color: var(--ink);
   text-decoration: none; border-bottom: 1px solid var(--ink-3);
   padding-bottom: 2px;
 }
@@ -3309,12 +4514,12 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   min-width: 0; flex: 1;
 }
 .rp-author {
-  font-size: 16px; font-weight: 600; color: var(--ink);
+  font-size: 14px; font-weight: 600; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rp-src {
-  font-size: 16px; color: var(--ink-3); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 11px; color: var(--ink-3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
 }
 .rp-src-link {
   color: inherit; text-decoration: none;
@@ -3345,7 +4550,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
 }
 .rp-tag {
   flex: 0 0 auto;
-  font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   padding: 3px 7px; border-radius: 999px;
 }
 .rp-tag-partner {
@@ -3362,7 +4567,7 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   display: flex; flex-direction: column; gap: 32px;
 }
 .rp-band-lbl {
-  font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--ink-3);
   margin-bottom: 16px;
 }
@@ -3370,10 +4575,10 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   display: flex; flex-wrap: wrap; gap: 8px;
 }
 .rp-logo {
-  height: 56px; padding: 0 28px;
+  height: 48px; padding: 0 22px;
   background: var(--paper); border-radius: 12px;
   display: inline-flex; align-items: center;
-  font-size: 16px; font-weight: 600; letter-spacing: -0.005em;
+  font-size: 13px; font-weight: 600; letter-spacing: -0.005em;
   color: var(--ink-2);
   box-shadow: 0 0 0 1px var(--line-soft);
 }
@@ -3436,20 +4641,109 @@ html, body { font-family: var(--chn-font-sans); color: var(--fg1); background: v
   .prn-track { animation: none; }
 }
 
+/* "Become a partner" CTA card — sits at the foot of the reviews section
+   as the section's terminal call to action. The banner is always dark
+   (in both themes) and is itself the click target: an absolutely
+   positioned overlay link covers the surface, with a secondary "Sign in
+   to B2B" link sitting above it on a higher z-index. Light theme keeps
+   the accent glow subtle; dark theme dials it up for a bit more colour. */
 .rp-cta {
   max-width: 1280px; margin: 0 auto;
+  position: relative;
+  overflow: hidden;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 40px;
-  background: var(--paper);
+  gap: 24px;
+  padding: 36px 40px;
+  background: #0F0F14;
   border-radius: 24px;
-  box-shadow: 0 0 0 1px var(--line-soft);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 60px -40px rgba(78, 161, 245, 0.35);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.rp-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 32px 70px -36px rgba(78, 161, 245, 0.45);
+}
+/* Full-bleed click target — covers the entire banner so any click on the
+   surface (other than the secondary link, which has higher z-index)
+   triggers the primary CTA. */
+.rp-cta-link {
+  position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit;
+  text-decoration: none;
+}
+.rp-cta-link:focus-visible {
+  outline: 2px solid #4EA1F5;
+  outline-offset: 2px;
+}
+/* Decorative wash — radial gradient anchored at opposite corners.
+   `pointer-events: none` so it never eats clicks from the overlay link
+   underneath. */
+.rp-cta-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 120% at 100% 0%, rgba(118, 234, 177, 0.12) 0%, rgba(118, 234, 177, 0) 60%),
+    radial-gradient(60% 100% at 0% 100%, rgba(78, 161, 245, 0.12) 0%, rgba(78, 161, 245, 0) 60%);
+}
+:where(html,body)[data-theme="dark"] .rp-cta {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 32px 80px -40px rgba(118, 234, 177, 0.40);
+}
+:where(html,body)[data-theme="dark"] .rp-cta-glow {
+  background:
+    radial-gradient(80% 120% at 100% 0%, rgba(118, 234, 177, 0.28) 0%, rgba(118, 234, 177, 0) 60%),
+    radial-gradient(60% 100% at 0% 100%, rgba(78, 161, 245, 0.24) 0%, rgba(78, 161, 245, 0) 60%);
+}
+/* Inner content sits visually above the glow but lets clicks fall
+   through to the overlay link beneath. */
+.rp-cta-text {
+  position: relative;
+  display: flex; align-items: center; gap: 18px;
+  min-width: 0;
+  pointer-events: none;
+}
+.rp-cta-icon {
+  flex: 0 0 auto;
+  width: 56px; height: 56px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(78,161,245,0.14) 0%, rgba(91,192,222,0.14) 50%, rgba(118,234,177,0.18) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .rp-cta-eyebrow {
-  font-size: 16px; color: var(--ink-3); margin-bottom: 6px;
+  font-size: 16px; color: #B6B2A8; margin-bottom: 6px;
 }
 .rp-cta-h {
   font-size: 32px; font-weight: 600; letter-spacing: -0.02em;
-  color: var(--ink);
+  color: #F5F4F2;
+}
+.rp-cta-actions {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 18px;
+  pointer-events: none;
+}
+/* Secondary CTA — outbound to the B2B cabinet (`/affiliate`). Sits
+   above the overlay link so it keeps its own click target. */
+.rp-cta-login {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: inherit; font-size: 15px; font-weight: 600;
+  color: #B6B2A8;
+  text-decoration: none;
+  padding: 6px 4px;
+  transition: color 150ms ease;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+.rp-cta-login:hover {
+  color: #F5F4F2;
+}
+.rp-cta-login svg {
+  transition: transform 150ms ease;
+}
+.rp-cta-login:hover svg {
+  transform: translateX(2px);
 }
 
 /* ═══ 05 — Account tiers (Pro light / VIP dark) ═══ */
@@ -3701,76 +4995,221 @@ a.rates-board-row:hover .rates-cta {
   100% { box-shadow: 0 0 0 0 rgba(78,217,160,0); }
 }
 
-/* ═══ 07 — Privacy & security ═══ */
-.ps-section {
+/* ═══ 07 — One balance ═══ */
+.ob-section {
   padding: 140px 40px;
   border-top: 1px solid var(--line);
 }
-.ps-head {
-  max-width: 1280px; margin: 0 auto 64px;
+.ob-head {
+  max-width: 1280px; margin: 0 auto 56px;
 }
-.ps-head h2 {
+.ob-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 14px; height: 32px;
+  background: var(--paper-2); border-radius: 999px;
+  font-size: 15px; font-weight: 500; color: var(--ink-2);
+}
+.ob-eyebrow-dot {
+  width: 6px; height: 6px; border-radius: 999px; background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.ob-head h2 {
   font-size: 72px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.0;
-  margin: 0; color: var(--ink); max-width: 1000px;
+  margin: 20px 0 0; color: var(--ink); max-width: 1000px;
 }
-.ps-lede {
+.ob-lede {
   font-size: 18px; line-height: 1.5; color: var(--ink-2);
   margin: 24px 0 0; max-width: 640px;
 }
-.ps-grid {
+.ob-grid {
   max-width: 1280px; margin: 0 auto;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px;
+  align-items: start;
 }
-@media (max-width: 900px) {
-  .ps-grid { grid-template-columns: 1fr; }
+@media (max-width: 1020px) {
+  .ob-grid { grid-template-columns: 1fr; gap: 40px; }
 }
-.ps-col {
-  background: var(--paper); border-radius: 22px;
-  padding: 32px 28px;
-  box-shadow: 0 0 0 1px var(--line-soft);
-  display: flex; flex-direction: column; gap: 0;
-  min-height: 300px;
-  position: relative;
-  transition: box-shadow 180ms ease, transform 180ms ease;
+
+/* Portfolio visual ----------------------------------------------------- */
+.ob-visual {
+  position: sticky; top: 96px;
+  /* Soft tinted background plate behind the card adds depth without
+     introducing another panel border. Pure CSS, no images. */
+  padding: 24px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0,194,111,0.18), transparent 55%),
+    radial-gradient(circle at 88% 92%, rgba(78,149,255,0.14), transparent 55%),
+    linear-gradient(160deg, var(--paper-2) 0%, var(--paper) 100%);
 }
-.ps-col:hover {
-  box-shadow: 0 0 0 1px var(--line), 0 14px 32px -16px rgba(15,15,20,0.18);
-  transform: translateY(-2px);
+@media (max-width: 1020px) {
+  .ob-visual { position: static; padding: 16px; }
 }
-.ps-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; margin-top: 8px;
+.ob-card {
+  background: var(--paper);
+  border-radius: 20px;
+  box-shadow: 0 0 0 1px var(--line-soft), 0 24px 48px -28px rgba(15,15,20,0.18);
+  padding: 28px;
+  display: flex; flex-direction: column;
 }
-.ps-cta {
-  font-size: 15px; font-weight: 600; color: var(--ink);
-  text-decoration: none; white-space: nowrap;
-  transition: color 150ms ease;
+:where(html,body)[data-theme="dark"] .ob-card {
+  box-shadow: 0 0 0 1px var(--line), 0 24px 48px -28px rgba(0,0,0,0.6);
 }
-.ps-cta:hover { color: var(--accent); }
-.ps-icon {
+.ob-card-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.ob-card-label {
+  font-size: 13px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.ob-card-live {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--accent-hover);
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--accent-soft);
+}
+:where(html,body)[data-theme="dark"] .ob-card-live {
+  color: #65EDBA;
+  background: rgba(0,194,111,0.18);
+}
+.ob-card-live-dot {
+  width: 6px; height: 6px; border-radius: 999px; background: var(--accent);
+  animation: ob-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ob-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,194,111,0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(0,194,111,0); }
+}
+.ob-card-balance {
+  font-size: 40px; font-weight: 700; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.ob-card-delta {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-top: 6px; font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.ob-card-delta-arrow { color: var(--accent); font-size: 11px; }
+.ob-card-delta-abs   { color: var(--accent); font-weight: 600; }
+.ob-card-delta-rel   { color: var(--ink-3); }
+
+.ob-alloc { margin-top: 24px; }
+.ob-alloc-bar {
+  display: flex; height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--paper-2);
+}
+.ob-alloc-seg { display: block; height: 100%; }
+.ob-alloc-seg + .ob-alloc-seg { box-shadow: -1px 0 0 var(--paper); }
+.ob-alloc-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 16px;
+  margin-top: 14px;
+}
+.ob-alloc-leg {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ink-2); font-weight: 500;
+}
+.ob-alloc-dot { width: 8px; height: 8px; border-radius: 999px; }
+.ob-alloc-pct { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.ob-card-divider {
+  height: 1px; background: var(--line-soft); margin: 22px 0;
+}
+
+.ob-holdings {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ob-hold {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center; gap: 12px;
+}
+.ob-mark {
+  width: 28px; height: 28px; border-radius: 999px;
+  display: grid; place-items: center;
+  color: #fff; font-size: 12px; font-weight: 700;
+  letter-spacing: 0;
+}
+/* Real currency icon variant — pulled from the calculator's catalog so
+   the holdings list reuses the same per-currency artwork. The icons
+   ship pre-shaped (round, padded) and carry their own brand colour, so
+   they need none of the fallback's background/letter styling — just
+   render them at the row's mark size. */
+.ob-mark-img {
+  display: block; background: transparent; color: transparent;
+  width: 32px; height: 32px;
+}
+.ob-hold-name {
+  display: flex; flex-direction: column; line-height: 1.15;
+}
+.ob-hold-tk  { font-size: 14px; font-weight: 600; color: var(--ink); }
+.ob-hold-sub { font-size: 12px; color: var(--ink-3); }
+.ob-hold-val {
+  font-size: 14px; font-weight: 600; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ob-hold-chg {
+  font-size: 12px; font-weight: 600; min-width: 44px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ob-hold-chg.up   { color: var(--accent); }
+.ob-hold-chg.dn   { color: #E5484D; }
+.ob-hold-chg.flat { color: var(--ink-3); }
+
+.ob-card-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 22px;
+}
+.ob-card-foot-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 999px;
+  background: var(--paper-2);
+  font-size: 12px; font-weight: 600; color: var(--ink-2);
+}
+.ob-card-foot-dot {
+  width: 6px; height: 6px; border-radius: 999px; background: var(--accent);
+}
+.ob-card-foot-meta {
+  font-size: 12px; color: var(--ink-3);
+}
+
+/* Features column ------------------------------------------------------ */
+.ob-features {
+  display: flex; flex-direction: column;
+}
+.ob-feat {
+  display: grid; grid-template-columns: 44px 1fr; gap: 18px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.ob-feat:first-child { padding-top: 0; }
+.ob-feat:last-of-type { border-bottom: 0; }
+.ob-feat-icon {
   width: 44px; height: 44px; border-radius: 12px;
   background: var(--paper-2);
   display: grid; place-items: center;
-  color: var(--ink); margin-bottom: 28px;
+  color: var(--ink);
 }
-.ps-h {
-  font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
-  margin: 0 0 12px; color: var(--ink);
+.ob-feat-h {
+  font-size: 20px; font-weight: 600; letter-spacing: -0.015em;
+  margin: 4px 0 6px; color: var(--ink);
 }
-.ps-sub {
-  font-size: 16px; line-height: 1.5; color: var(--ink-2);
-  margin: 0 0 24px; flex: 1;
+.ob-feat-sub {
+  font-size: 15px; line-height: 1.5; color: var(--ink-2);
+  margin: 0;
 }
-.ps-tag {
-  align-self: flex-start;
-  font-size: 16px; font-weight: 600;
-  padding: 6px 12px; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent-hover);
-  letter-spacing: -0.005em;
+.ob-cta-row {
+  display: flex; align-items: center; gap: 24px;
+  margin-top: 32px; flex-wrap: wrap;
 }
-:where(html,body)[data-theme="dark"] .ps-tag {
-  background: rgba(0,194,111,0.15); color: #4ED9A0;
+.ob-cta-link {
+  font-size: 15px; font-weight: 600; color: var(--ink-2);
+  text-decoration: none;
+  transition: color 150ms ease;
 }
+.ob-cta-link:hover { color: var(--ink); }
 
 /* ═══ 08 — Apps everywhere ═══ */
 .apps-section {
@@ -3778,100 +5217,475 @@ a.rates-board-row:hover .rates-cta {
   background: var(--paper-2);
   border-top: 1px solid var(--line);
 }
+.apps-head {
+  max-width: 1280px; margin: 0 auto 56px;
+}
+.apps-tabs {
+  display: inline-flex; gap: 4px;
+  margin-top: 40px;
+  padding: 6px;
+  background: var(--paper);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+.apps-tab {
+  appearance: none; border: 0; cursor: pointer;
+  padding: 10px 22px; border-radius: 999px;
+  background: transparent; color: var(--ink-2);
+  font: inherit; font-size: 15px; font-weight: 600;
+  transition: background 150ms ease, color 150ms ease;
+}
+.apps-tab:hover { color: var(--ink); }
+.apps-tab.on {
+  background: var(--ink); color: var(--paper);
+}
 .apps-grid {
   max-width: 1280px; margin: 0 auto;
   display: grid; grid-template-columns: 1fr 1.1fr; gap: 80px;
   align-items: center;
+  min-height: 540px;
 }
 .apps-l {
   display: grid; place-items: center;
   position: relative;
-  min-height: 600px;
+  min-height: 540px;
+  animation: apps-fade 280ms ease-out;
 }
-/* Two-phone composition built from the legacy app screenshots. The back
-   tile shows the wallet board (asset list + balance), the front tile shows
-   the swap quote — together they narrate "custody + swap in one app"
-   without copy. Soft glow lives behind both, real device frames come from
-   the source PNGs themselves. */
-.apps-phones {
+.apps-r { animation: apps-fade 320ms ease-out; }
+@keyframes apps-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 1020px) {
+  .apps-grid { grid-template-columns: 1fr; gap: 48px; min-height: 0; }
+  .apps-l { min-height: 380px; }
+}
+
+/* Desktop visual — macOS-style window ---------------------------------- */
+.apps-mac {
+  width: 100%; max-width: 520px;
+  background: var(--paper);
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px var(--line-soft), 0 30px 60px -28px rgba(15,15,20,0.32);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+:where(html,body)[data-theme="dark"] .apps-mac {
+  box-shadow: 0 0 0 1px var(--line), 0 30px 60px -28px rgba(0,0,0,0.7);
+}
+.apps-mac-chrome {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--paper-2);
+}
+.apps-mac-dot {
+  width: 12px; height: 12px; border-radius: 999px;
+}
+.apps-mac-url {
+  margin-left: 18px;
+  font-size: 12px; color: var(--ink-3);
+  font-family: var(--chn-font-sans);
+}
+.apps-mac-body {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px;
+  padding: 22px;
+}
+.apps-mac-pane {
+  background: var(--paper-2);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
   position: relative;
-  width: 460px; max-width: 100%;
-  aspect-ratio: 460 / 560;
-  display: block;
 }
-.apps-phones::before {
-  content: ""; position: absolute; inset: 8% -4% 12% -4%;
+.apps-mac-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+.apps-mac-row-label {
+  font-size: 12px; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.apps-mac-row-amt {
+  font-size: 16px; font-weight: 700; color: var(--ink);
+}
+.apps-mac-row-amt strong {
+  margin-left: 4px; color: var(--accent); font-weight: 700;
+}
+.apps-mac-arrow {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px; height: 28px; border-radius: 999px;
+  background: var(--paper); color: var(--ink);
+  display: grid; place-items: center;
+  font-size: 14px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.apps-mac-cta {
+  margin-top: 4px; padding: 10px 14px;
+  background: var(--ink); color: var(--paper);
+  border-radius: 10px; text-align: center;
+  font-size: 14px; font-weight: 600;
+}
+.apps-mac-side {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.apps-mac-tick {
+  display: flex; justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--paper-2);
+  border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+}
+.apps-mac-tick .up   { color: var(--accent); }
+.apps-mac-tick .flat { color: var(--ink-3); }
+@media (max-width: 540px) {
+  .apps-mac-body { grid-template-columns: 1fr; }
+}
+
+/* AI visual — chat with an agent --------------------------------------- */
+.apps-ai {
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.apps-ai-bubble {
+  padding: 14px 16px; border-radius: 16px;
+  font-size: 15px; line-height: 1.45;
+  box-shadow: 0 8px 24px -16px rgba(15,15,20,0.2);
+}
+.apps-ai-bubble.user {
+  align-self: flex-end; max-width: 80%;
+  background: var(--ink); color: var(--paper);
+  border-bottom-right-radius: 4px;
+}
+.apps-ai-bubble.agent {
+  align-self: flex-start; max-width: 92%;
+  background: var(--paper); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line-soft), 0 12px 28px -20px rgba(15,15,20,0.25);
+  border-bottom-left-radius: 4px;
+}
+.apps-ai-who {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; opacity: 0.6;
+  margin-bottom: 4px;
+}
+.apps-ai-bubble.user .apps-ai-who { color: var(--paper); opacity: 0.7; }
+.apps-ai-dot {
+  width: 6px; height: 6px; border-radius: 999px; background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.apps-ai-actions {
+  display: flex; gap: 10px; padding-left: 8px;
+}
+.apps-ai-btn {
+  display: inline-flex; align-items: center;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--paper); color: var(--ink);
+  font-size: 13px; font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.apps-ai-btn.primary {
+  background: var(--accent); color: #fff;
+  box-shadow: none;
+}
+/* iPhone-frame mount for the Mobile tab — replaces the old two-PNG
+   composition. The frame is a vector device shell (notch, side buttons,
+   rounded corners), the screen rect is 440×956 inside a 476×986 canvas
+   (offsets 18,15). We render the real `SwapWidget` inside that rect so
+   the section's "every surface" claim is shown with a working calculator
+   instead of a screenshot. Per-element style overrides for the on-phone
+   presentation are scoped below to `.apps-phone-screen .widget …`. */
+.apps-phone {
+  position: relative;
+  width: 360px; max-width: 100%;
+  display: block;
+  filter: drop-shadow(0 32px 60px rgba(15,15,20,0.28));
+  isolation: isolate;
+}
+.apps-phone::before {
+  content: ""; position: absolute; inset: -8% -12% 0;
   background: radial-gradient(
     ellipse at 50% 55%,
     rgba(0, 194, 111, 0.18) 0%,
     rgba(120, 90, 200, 0.14) 35%,
     transparent 70%
   );
-  filter: blur(40px); z-index: 0; pointer-events: none;
+  filter: blur(40px); z-index: -1; pointer-events: none;
 }
-.apps-phone-back {
-  position: absolute; right: -2%; top: 0;
-  width: 80%; z-index: 1;
-  filter: drop-shadow(0 24px 60px rgba(15,15,20,0.25));
+.apps-phone-frame {
+  display: block;
+  width: 100%;
+  height: auto;
 }
-.apps-phone-back img {
-  width: 100%; height: auto; display: block;
-}
-.apps-phone-front {
-  position: absolute; left: 0; bottom: 0;
-  width: 56%; z-index: 2;
-  filter: drop-shadow(0 30px 70px rgba(15,15,20,0.35));
-}
-.apps-phone-front img {
-  width: 100%; height: auto; display: block;
+.apps-phone-screen {
+  /* Screen rect inside the SVG frame (18, 15, 440×956 of 476×986). */
+  position: absolute;
+  left:   3.781%;
+  top:    1.521%;
+  width:  92.437%;
+  height: 96.957%;
+  border-radius: 13%;
+  overflow: hidden;
+  background: #F2F2F2;
+  display: flex; flex-direction: column;
+  font-size: 13px;
 }
 @media (max-width: 900px) {
   .apps-l { min-height: 480px; }
-  .apps-phones { width: 100%; max-width: 360px; }
+  .apps-phone { width: 100%; max-width: 320px; }
 }
-/* Old fallback faux-phone — kept for legacy callers that still mount
-   `apps-phone-*` directly. Not used by the new homepage, retained only so
-   stray references don't crash. */
-.apps-phone {
-  display: none;
+
+/* Phone calculator — bespoke mobile surface that lives inside the
+   iPhone screen rect. Reuses the same `useExchangeEstimate` +
+   `<CurrencyPicker>` plumbing as the hero widget; the visual is the
+   supplied mockup (см. /Users/Elias/Downloads/лимитные ордера и новый
+   калькулятор 01/exchange.svg) — CN wordmark, two-tab pill, Type row,
+   two big cards with a flip between, info list, Continue CTA.
+
+   All `.pc-*` classes are scoped via the `.apps-phone-screen` parent
+   so they only style this surface; light theme is hard-coded because
+   the on-phone presentation should look like a mobile app regardless
+   of the surrounding marketing page's theme. */
+.apps-phone-screen .pc {
+  display: flex; flex-direction: column;
+  height: 100%;
+  padding: 14px 14px 12px;
+  background: #F4F4F6;
+  color: #1F1F1F;
+  font-family: var(--chn-font-sans);
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0;
 }
-.apps-phone-screen {
-  width: 100%; height: 100%; border-radius: 32px;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(120,90,200,0.16), transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(0,194,111,0.10), transparent 50%),
-    #14141A;
-  padding: 56px 24px 32px;
-  display: flex; flex-direction: column; gap: 24px;
+
+.pc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pc-logo {
+  font-size: 14px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #1F1F1F;
+}
+.pc-logo-now { color: var(--accent); }
+.pc-profile {
+  width: 26px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  color: #4E95FF;
+  box-shadow: 0 1px 2px rgba(15,15,20,0.06);
+}
+
+.pc-tabs {
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px;
+  display: flex; gap: 2px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgba(15,15,20,0.04);
+}
+.pc-tab {
+  flex: 1; min-width: 0;
+  border: 0; background: transparent;
+  height: 30px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 11px; font-weight: 600;
+  color: #8A8A8E;
+  cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pc-tab[aria-selected="true"] {
+  background: #F4F4F6;
+  color: #1F1F1F;
+}
+
+.pc-type-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.pc-type-label {
+  color: #8A8A8E;
+  border-bottom: 1px dotted #C8C8CC;
+  padding-bottom: 1px;
+}
+.pc-type-pill {
+  border: 1px solid transparent; background: transparent;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 11px; font-weight: 600;
+  color: #6F6F76;
+  cursor: pointer;
+}
+.pc-type-pill[aria-pressed="true"] {
+  background: #fff; color: #1F1F1F;
+  box-shadow: 0 1px 2px rgba(15,15,20,0.04);
+}
+/* "Fixed" reads as the active rate-lock affordance — mockup uses a
+   green-outlined chip on a soft-mint background to flag commitment. */
+.pc-type-row .pc-type-pill:last-child[aria-pressed="true"] {
+  background: #DEF7EC; color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+.pc-fields {
+  position: relative;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.pc-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 14px 12px;
+}
+.pc-card-label {
+  font-size: 11px;
+  color: #8A8A8E;
+  margin-bottom: 4px;
+}
+.pc-amount {
+  border: 0; background: transparent;
+  font-family: inherit;
+  font-size: 20px; font-weight: 600;
+  color: #1F1F1F;
+  width: 100%;
+  padding: 0;
+  outline: none;
+  letter-spacing: -0.01em;
+}
+.pc-amount-receive { color: var(--accent); }
+.pc-amount::placeholder { color: #C8C8CC; }
+
+.pc-flip {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  background: #F4F4F6;
+  border: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #6F6F76;
+  cursor: pointer;
+  z-index: 5;
+  /* White halo so the button visually punches out of the gap between
+     the two white cards (which is also the page background colour). */
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.pc-info {
+  list-style: none;
+  margin: 16px 0 12px;
+  padding: 0;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.pc-info-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 11px;
+}
+.pc-info-label {
+  color: #8A8A8E;
+  border-bottom: 1px dotted #C8C8CC;
+  padding-bottom: 1px;
+}
+.pc-info-value {
+  color: #1F1F1F; font-weight: 500;
+}
+.pc-info-time {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: #1F1F1F; font-weight: 500;
+}
+
+.pc-advanced {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid #E5E5E8;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1F1F;
+  margin-bottom: 10px;
+}
+.pc-advanced svg { color: #8A8A8E; }
+
+.pc-cta {
+  display: block;
+  height: 38px; line-height: 38px;
+  text-align: center;
+  background: var(--accent);
   color: #fff;
+  border-radius: 999px;
+  font-weight: 600; font-size: 13px;
+  text-decoration: none;
+  margin-bottom: 8px;
 }
-.apps-phone-row {
-  display: flex; align-items: baseline; justify-content: space-between;
+.pc-cta:hover { filter: brightness(1.05); }
+
+.pc-disclaimer {
+  margin: 0;
+  font-size: 10px;
+  color: #A0A0A6;
+  text-align: center;
+  line-height: 1.4;
 }
-.apps-phone-bal {
-  font-size: 32px; font-weight: 700; letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums;
+.pc-disclaimer a {
+  color: #6F6F76;
+  text-decoration: underline; text-underline-offset: 2px;
 }
-.apps-phone-pct {
-  font-size: 16px; font-weight: 600;
-  padding: 4px 10px; border-radius: 999px;
+
+/* Currency picker — flatten the trigger to the mockup's
+   icon + ticker + caret shape. The picker's internal modal/dropdown
+   keeps its own styling (lives outside the phone). */
+.pc .cur {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  padding: 0;
 }
-.apps-phone-pct.up { color: #4ED9A0; background: rgba(78,217,160,0.14); }
-.apps-phone-chart {
-  height: 96px; border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(78,217,160,0.20) 0%, transparent 100%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 280 96' preserveAspectRatio='none'><polyline fill='none' stroke='%234ED9A0' stroke-width='2' points='0,70 30,60 60,65 90,40 120,50 150,30 180,42 210,20 240,28 280,12'/></svg>") center/100% 100% no-repeat;
+.pc .cur-shell {
+  padding: 0 !important;
+  gap: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  align-items: center;
 }
-.apps-phone-tiles {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+.pc .cur-amount-slot {
+  padding: 0 !important;
+  flex: 1; min-width: 0;
 }
-.apps-phone-tiles > div {
-  aspect-ratio: 1; border-radius: 14px;
-  background: rgba(255,255,255,0.08);
-  display: grid; place-items: center;
-  font-size: 16px; font-weight: 600;
-  color: rgba(255,255,255,0.85);
+.pc .coin-trigger {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 6px !important;
+  flex: 0 0 auto;
+}
+.pc .coin-trigger-avatar {
+  width: 22px !important; height: 22px !important;
+}
+.pc .coin-trigger-avatar img,
+.pc .coin-trigger-avatar svg {
+  width: 22px !important; height: 22px !important;
+}
+.pc .coin-trigger-ticker {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #1F1F1F !important;
+  letter-spacing: 0;
+}
+.pc .coin-trigger-chip { display: none; }
+.pc .coin-trigger-caret {
+  color: #6F6F76 !important;
+  width: 12px !important; height: 12px !important;
 }
 
 .apps-eyebrow {
@@ -3893,17 +5707,29 @@ a.rates-board-row:hover .rates-cta {
 }
 .apps-foot a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .apps-foot a:hover { color: var(--accent); }
-.apps-r h2 {
+.apps-head h2 {
   font-size: 64px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
   margin: 0; color: var(--ink);
 }
 .apps-sub {
   font-size: 18px; line-height: 1.5; color: var(--ink-2);
-  margin: 24px 0 40px; max-width: 480px;
+  margin: 24px 0 0; max-width: 480px;
 }
-.apps-list {
+.apps-buttons.as-rows {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   max-width: 540px;
+}
+.apps-buttons.as-badges {
+  display: flex; flex-wrap: wrap; gap: 12px;
+}
+.apps-badge {
+  display: inline-flex; align-items: center;
+  transition: transform 150ms ease, filter 150ms ease;
+}
+.apps-badge img { display: block; height: 48px; width: auto; }
+.apps-badge:hover { transform: translateY(-1px); filter: brightness(1.05); }
+@media (max-width: 540px) {
+  .apps-buttons.as-rows { grid-template-columns: 1fr; }
 }
 .apps-btn {
   display: flex; align-items: center; gap: 14px;
@@ -3956,18 +5782,14 @@ a.rates-board-row:hover .rates-cta {
 .reach-map {
   aspect-ratio: 961 / 487;
   position: relative;
-  background: linear-gradient(160deg, #14141A 0%, #0B0B10 100%);
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
 }
 .reach-map-bg {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: contain;
   /* Tone the dots so the brand-color markers pop on top. */
-  opacity: 0.35;
-  filter: brightness(1.4) saturate(0.4);
+  opacity: 0.45;
+  filter: brightness(1.6) saturate(0.4);
 }
 .reach-map-overlay {
   position: absolute; inset: 0;
@@ -4059,56 +5881,110 @@ a.rates-board-row:hover .rates-cta {
   max-width: 1280px; margin: 0 auto 56px;
 }
 .family-head h2 {
-  font-size: 88px; font-weight: 700; letter-spacing: -0.035em; line-height: 0.96;
+  font-size: 72px; font-weight: 700; letter-spacing: -0.035em; line-height: 0.98;
   margin: 0; color: var(--ink);
 }
 .family-sub {
-  font-size: 18px; color: var(--ink-2); line-height: 1.5;
-  margin: 24px 0 0; max-width: 560px;
+  font-size: 17px; color: var(--ink-2); line-height: 1.5;
+  margin: 20px 0 0; max-width: 540px;
 }
-.family-grid {
+.family-bento {
   max-width: 1280px; margin: 0 auto;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  grid-auto-rows: minmax(140px, auto);
 }
 .family-card {
-  background: var(--paper); border-radius: 18px;
+  /* Brand-tinted card — `--brand` is set inline from the component. The
+     radial spot in the top-left fades back into the paper so the card
+     still reads as a card, not a flat coloured tile; the 1px ring picks
+     up a sliver of the brand hue so the edge feels alive in light mode.
+     `color-mix` keeps the tint at the same perceptual strength regardless
+     of the brand colour's luminance. */
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--brand, var(--ink-3)) 18%, transparent), transparent 65%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--brand, var(--ink-3)) 8%, transparent), transparent 60%),
+    var(--paper);
+  border-radius: 18px;
   padding: 24px;
   text-decoration: none;
-  display: flex; flex-direction: column; gap: 16px;
-  box-shadow: 0 0 0 1px var(--line-soft);
-  transition: transform 150ms, box-shadow 150ms;
-  min-height: 168px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  gap: 20px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand, var(--line)) 20%, var(--line-soft)),
+    0 0 0 transparent;
+  transition: transform 160ms ease, box-shadow 200ms ease;
   position: relative;
+  overflow: hidden;
 }
+:where(html,body)[data-theme="dark"] .family-card {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--brand, var(--ink-3)) 28%, transparent), transparent 65%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--brand, var(--ink-3)) 12%, transparent), transparent 60%),
+    var(--paper);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand, var(--line)) 30%, var(--line)),
+    0 0 0 transparent;
+}
+.family-card-hero { grid-column: span 2; padding: 28px 32px; }
+.family-card-wide { grid-column: span 2; }
+.family-card-cell { grid-column: span 1; }
 .family-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0 0 1px var(--line), 0 12px 24px -8px rgba(15,15,20,0.10);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand, var(--line)) 45%, var(--line)),
+    0 18px 36px -16px color-mix(in srgb, var(--brand, rgba(15,15,20,0.18)) 35%, rgba(15,15,20,0.12));
 }
-.family-card-mark {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--ink); color: var(--paper);
-  display: grid; place-items: center;
-  font-size: 16px; font-weight: 800; letter-spacing: -0.02em;
+.family-card-body {
+  display: flex; flex-direction: column; gap: 12px;
+  flex: 1; min-width: 0;
 }
-.family-card-text { flex: 1; }
-.family-card-name {
-  font-size: 18px; font-weight: 600; color: var(--ink);
-  letter-spacing: -0.01em;
-  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+/* Lockup — icon glyph + product name in brand colour. Single uniform
+   path across every card (was two: legacy white-on-dark wordmark SVGs
+   for most, and icon-plus-text fallback for Token / Blog). The legacy
+   wordmarks render their secondary word ("Payments", "wallet", etc.)
+   in `#FEFEFE` and vanish on the light-tinted paper cards, so we drop
+   them and paint the product name as text in both themes. */
+.family-lockup {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 40px;
 }
+.family-icon {
+  width: 40px; height: 40px; display: block; flex-shrink: 0;
+}
+.family-card-hero .family-icon { width: 48px; height: 48px; }
+.family-name {
+  font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  font-family: var(--chn-font-flex), var(--chn-font-sans);
+}
+.family-card-hero .family-name { font-size: 24px; }
 .family-tag {
-  font-size: 16px; font-weight: 800; letter-spacing: 0.08em;
-  padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
-  background: var(--paper-2); color: var(--ink-2);
+  position: absolute; top: 16px; right: 16px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 7px; border-radius: 999px; text-transform: uppercase;
+  background: color-mix(in srgb, var(--brand, var(--paper-2)) 16%, var(--paper));
+  color: color-mix(in srgb, var(--brand, var(--ink-3)) 90%, var(--ink));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand, var(--line)) 30%, transparent);
 }
 .family-card-sub {
-  font-size: 16px; color: var(--ink-3); line-height: 1.4;
+  font-size: 14px; color: var(--ink-2); line-height: 1.45;
 }
+.family-card-hero .family-card-sub { font-size: 16px; }
 .family-card-arrow {
-  position: absolute; top: 24px; right: 24px;
-  color: var(--ink-3); font-size: 16px; opacity: 0; transition: opacity 150ms, transform 150ms;
+  position: absolute; bottom: 20px; right: 22px;
+  color: color-mix(in srgb, var(--brand, var(--ink-3)) 75%, var(--ink));
+  font-size: 18px; opacity: 0;
+  transition: opacity 150ms, transform 150ms;
 }
-.family-card:hover .family-card-arrow { opacity: 1; transform: translateX(2px); color: var(--ink); }
+.family-card:hover .family-card-arrow { opacity: 1; transform: translateX(2px); }
+@media (max-width: 900px) {
+  .family-bento { grid-template-columns: repeat(2, 1fr); }
+  .family-card-hero, .family-card-wide { grid-column: span 2; }
+  .family-card-cell { grid-column: span 1; }
+}
+@media (max-width: 560px) {
+  .family-bento { grid-template-columns: 1fr; }
+  .family-card-hero, .family-card-wide, .family-card-cell { grid-column: span 1; }
+}
 
 /* ═══ 11 — FAQ ═══ */
 .faq-section {
@@ -4163,6 +6039,181 @@ a.rates-board-row:hover .rates-cta {
   max-width: 880px; margin: 48px auto 0;
   display: flex; align-items: center; justify-content: space-between;
   font-size: 16px; color: var(--ink-2);
+}
+
+/* ═══ 12 — Mobile responsive overrides ═══
+   Consolidated at the end of the file so every section's desktop rules
+   stay readable in their own block, and mobile fixes land in one place.
+   Anything that grew past two breakpoints of its own (Hero stack at 1024,
+   OneBalance / AppsEverywhere at 1020, ProductsFamily at 900/560) stays
+   local. */
+@media (max-width: 900px) {
+  /* Calculator on first screen: the hero's grid-template-areas already
+     drops the dek/CTA/Trustpilot strip below the widget. Here we just
+     compress the headline above it so the calculator clears the fold. */
+  .hero { padding-block: 20px 40px; gap: 16px; }
+  .hero h1 { font-size: clamp(28px, 9vw, 40px); margin-top: 14px; line-height: 1.02; }
+  .hero-dek { margin-top: 20px; font-size: 16px; }
+  .hero-cta { margin-top: 20px; }
+  .hero-trust { margin-top: 24px; padding-top: 16px; }
+  /* Phones get the Mini TrustBox (vertical, full info — same template
+     the footer uses); the horizontal Micro Trust Score gets hidden. */
+  .hero-trust--desktop { display: none; }
+  .hero-trust--mobile { display: flex; }
+  /* Min-height is desktop-only — let it size to content on phones
+     so the calc + the headline cluster fit one screen. */
+  .hero > .widget { min-height: 0; padding: 18px; border-radius: 22px; }
+
+  /* Compact section paddings everywhere */
+  .track-record,
+  .tiers-section,
+  .ob-section,
+  .apps-section,
+  .family-section,
+  .faq-section,
+  .pr-section,
+  .rp-section { padding: 72px 20px; }
+  .rp-cta { padding: 24px; flex-direction: column; align-items: flex-start; gap: 18px; }
+  .rp-cta-text { gap: 14px; }
+  .rp-cta-icon { width: 44px; height: 44px; border-radius: 14px; }
+  .rp-cta-icon svg { width: 22px; height: 22px; }
+  .rp-cta-h { font-size: 26px; }
+  .rp-cta-actions { gap: 12px; flex-wrap: wrap; }
+  .reach-section { padding: 72px 0; }
+  .reach-grid { padding: 0 20px; }
+  .ob-section, .apps-section { padding-left: 20px; padding-right: 20px; }
+
+  /* Headline downscale — the 64–88px desktop sizes are unreadable on a phone */
+  .tr-head h2,
+  .family-head h2,
+  .ob-head h2,
+  .apps-head h2,
+  .tiers-head h2,
+  .rp-head h2,
+  .faq-head h2,
+  .reach-r h2 { font-size: clamp(36px, 9.5vw, 52px); line-height: 1.02; }
+  .ob-lede,
+  .apps-sub,
+  .family-sub { font-size: 16px; }
+
+  /* Track-record stats — 4 cols crush to 2, vertical separators stop
+     making sense once we wrap, so swap to a horizontal underline. */
+  .tr-grid { grid-template-columns: 1fr 1fr; gap: 0; }
+  .tr-stat {
+    padding: 24px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .tr-stat:nth-child(odd)  { border-right: 1px solid var(--line); }
+  .tr-stat:nth-last-child(-n+2) { border-bottom: 0; }
+  .tr-num { font-size: 56px; line-height: 0.94; }
+  .tr-num .tr-unit { font-size: 22px; }
+
+  /* Features block — horizontal scroll carousel at phone & tablet widths.
+     One card visible at a time, with the next card's left edge peeking on
+     the right to hint the swipe gesture. Scroll-snap so cards land aligned
+     rather than mid-card on flick. The negative inline margins extend the
+     scrollport edge-to-edge while the scroll-padding keeps cards inside
+     the section gutter. */
+  .fb-section { padding: 72px 20px; }
+  .fb-head h2 { font-size: clamp(36px, 9vw, 56px); line-height: 1.02; }
+  .fb-grid {
+    display: flex; gap: 12px;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-inline: -20px;
+    padding: 4px 20px 16px;
+    scroll-padding-inline: 20px;
+  }
+  .fb-grid::-webkit-scrollbar { display: none; }
+  .fb-card {
+    /* 86% card → ~14% peek on the next card, comfortable swipe affordance */
+    flex: 0 0 86%;
+    scroll-snap-align: start;
+  }
+
+  /* Reviews — 3 → 1, head row stacks */
+  .rp-reviews-grid { grid-template-columns: 1fr; }
+  .rp-reviews-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .rp-review { padding: 22px 22px 20px; min-height: 0; }
+  .rp-quote { font-size: 16px; }
+
+  /* Press cards — 3 → 1 */
+  .pr-cards { grid-template-columns: 1fr; }
+  .pr-trailer-title { font-size: 24px; }
+  .pr-trailer { min-height: 240px; }
+
+  /* Account tiers — 2 → 1 */
+  .tiers-grid { grid-template-columns: 1fr; }
+  .tier-card { padding: 32px 24px; min-height: 0; }
+  .tier-h { font-size: 40px; }
+
+  /* Global reach — map + stats stack */
+  .reach-grid { grid-template-columns: 1fr; gap: 32px; align-items: stretch; }
+  .reach-stat strong { font-size: 22px; }
+
+  /* AppsEverywhere & FeaturesBlock tabs — smaller fonts on phones so the
+     pill cluster doesn't dominate above the carousel. Tab rows that still
+     don't fit (FB has 5 tabs) become horizontally scrollable. */
+  .apps-tabs { padding: 4px; }
+  .apps-tab { padding: 7px 14px; font-size: 13px; }
+  .apps-mac { max-width: 100%; }
+  .fb-tabs {
+    overflow-x: auto;
+    margin-inline: -20px;
+    padding: 0 20px 4px;
+    scrollbar-width: none;
+    /* `safe center` keeps the pill centered when there's room (FB's five
+       tabs comfortably fit ~360px wide phones), but falls back to start
+       alignment if the pill ever overflows so the user can scroll the
+       hidden ones into view rather than be trapped with them clipped at
+       the right edge. Without `safe`, plain `center` would push the
+       overflowing pill into negative scroll space the browser can't
+       reach via the scrollbar. */
+    justify-content: safe center;
+  }
+  .fb-tabs::-webkit-scrollbar { display: none; }
+  .fb-tab { padding: 6px 14px; height: 32px; font-size: 13px; }
+
+  /* OneBalance — visual stacks above features; tighten card paddings */
+  .ob-visual { padding: 14px; }
+  .ob-card { padding: 22px; }
+  .ob-card-balance { font-size: 34px; }
+  .ob-feat { padding: 18px 0; }
+  .ob-feat-h { font-size: 18px; }
+
+  /* FAQ — bigger tap targets, smaller font on Q */
+  .faq-q { font-size: 18px; padding: 22px 0; }
+  .faq-a { font-size: 16px; }
+  .faq-foot { flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+
+@media (max-width: 640px) {
+  /* Phone-only: the calculator breaks out of the hero's inline gutter
+     and runs edge-to-edge so the "You send / You get" fields aren't
+     fighting the 16-40 px gutter for horizontal space. Tablets above
+     640 px keep the centred-card look. Border-radius drops to 0 since
+     curves meeting the viewport edge read as artefacts. */
+  .hero > .widget,
+  .hero > .swap-widget-skeleton {
+    width: calc(100% + 2 * var(--gutter));
+    max-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    justify-self: stretch;
+  }
+  .hero > .widget {
+    padding-inline: var(--gutter);
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .rp-bands { gap: 24px; }
+  .rp-logos { gap: 6px; }
+  .rp-logo { height: 40px; padding: 0 16px; font-size: 12px; }
 }
 
 
@@ -4242,3 +6293,255 @@ a.rates-board-row:hover .rates-cta {
   transition: transform 120ms ease, color 120ms ease, opacity 120ms ease;
 }
 .apps-pop-row:hover .apps-pop-arrow { color: var(--ink); transform: translateX(2px); opacity: 1; }
+
+/* ═══ Bridge currency picker (chain-then-coin two-pane modal) ════════════════
+   Sits over `.cur` (the shared closed-state shell — trigger pill + amount
+   slot stay the same). The open state is rendered via the shared
+   `<Overlay mode="modal">` primitive, which owns positioning, backdrop,
+   z-index, scroll-lock, focus management, Esc/click-outside dismissal
+   AND the mobile-fullscreen swap. This file only owns the inner layout
+   (head, grid, panes). */
+.cur-bridge { position: relative; }
+
+/* `.cur-bridge-modal` is now an inner class on the Overlay panel — the
+   primitive already sized + centered + portalled the panel, so we only
+   add the bridge-specific flex column. */
+.cur-bridge-modal {
+  display: flex; flex-direction: column;
+  height: 100%; min-height: 0;
+}
+
+.cur-bridge-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cur-bridge-title {
+  font-size: 18px; font-weight: 600; margin: 0; color: var(--ink);
+}
+.cur-bridge-close {
+  background: transparent; border: 0; cursor: pointer;
+  font-size: 28px; line-height: 1; color: var(--ink-3); padding: 0 6px;
+}
+.cur-bridge-close:hover { color: var(--ink); }
+
+.cur-bridge-grid {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 280px 1fr; gap: 0;
+}
+@media (max-width: 720px) {
+  .cur-bridge-grid { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+}
+
+.cur-bridge-pane {
+  display: flex; flex-direction: column; min-height: 0;
+  padding: 16px 14px;
+  border-right: 1px solid var(--line-soft);
+}
+.cur-bridge-pane:last-child { border-right: 0; }
+
+.cur-bridge-search {
+  width: 100%; height: 40px;
+  padding: 0 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit; font-size: 14px;
+  outline: 0;
+  transition: border-color 120ms, background 120ms;
+}
+.cur-bridge-search:focus {
+  border-color: var(--accent);
+  background: var(--paper);
+}
+.cur-bridge-search::placeholder { color: var(--ink-3); }
+
+.cur-bridge-list {
+  list-style: none; padding: 6px 0 0; margin: 0;
+  flex: 1; min-height: 0; overflow-y: auto;
+  scrollbar-width: thin;
+}
+.cur-bridge-list::-webkit-scrollbar { width: 6px; }
+.cur-bridge-list::-webkit-scrollbar-thumb {
+  background: var(--line); border-radius: 999px;
+}
+
+.cur-bridge-section {
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  padding: 14px 12px 6px;
+  text-transform: none;
+}
+
+.cur-bridge-row {
+  width: 100%;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  background: transparent; border: 0; cursor: pointer;
+  border-radius: 10px;
+  text-align: left; color: var(--ink); font: inherit;
+  transition: background 120ms;
+}
+.cur-bridge-row:hover { background: var(--paper-2); }
+.cur-bridge-row-active {
+  background: color-mix(in srgb, var(--accent, #00C26F) 14%, transparent);
+}
+.cur-bridge-row-active:hover {
+  background: color-mix(in srgb, var(--accent, #00C26F) 20%, transparent);
+}
+/* Paired-ticker emphasis — the row that the user almost certainly wants
+   when they pick a new chain (same asset on the other side). Lighter
+   than the active-selection treatment so the distinction stays legible
+   side-by-side, with a subtle accent-tinted ring so it reads as a
+   "suggested" pick rather than a confirmed one. */
+.cur-bridge-row-highlight {
+  background: color-mix(in srgb, var(--accent, #00C26F) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, #00C26F) 35%, transparent);
+}
+.cur-bridge-row-highlight:hover {
+  background: color-mix(in srgb, var(--accent, #00C26F) 12%, transparent);
+}
+
+.cur-bridge-chain-pip {
+  width: 28px; height: 28px; flex: 0 0 28px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 14px; font-weight: 700;
+  overflow: hidden;
+}
+/* Real chain logo — resolved from the native currency's iconUrl. The
+   transparent variant looks better against the row background than the
+   colored letter fallback, but both render as the same 28px circle so
+   the row baseline doesn't shift. */
+.cur-bridge-chain-pip-img {
+  background: transparent;
+  object-fit: contain;
+  width: 28px; height: 28px;
+}
+.cur-bridge-chain-pip-all {
+  background: linear-gradient(135deg, #00C26F 0%, #4E95FF 100%);
+  color: #fff;
+}
+
+.cur-bridge-row-label {
+  flex: 1; font-size: 15px; font-weight: 500; color: var(--ink);
+}
+.cur-bridge-row-check {
+  color: var(--accent, #00C26F); font-weight: 700; font-size: 14px;
+}
+/* Coloured chain code chip on the left-pane chain row — reuses the
+   `.cur-row-network` styling (same padding, radius, font) so the chip
+   reads identically to the network badge on the right-pane token row.
+   `flex-shrink: 0` so the chip never collapses under a long chain
+   label; `margin-left: 8px` gives it breathing room from the label. */
+.cur-bridge-row-chain-chip {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+/* Bridge token row (right pane) reuses the regular CurrencyPicker
+   classes (`cur-row-name`, `cur-row-fullname`, `cur-row-network`) so
+   styling stays in lockstep with the standard picker. The shared
+   `.cur-row-name strong` rule paints the bold ticker, and
+   `.cur-row-network` paints the chain badge — no bridge-specific
+   overrides needed below. */
+
+/* Token row inside the right pane — same height as chain rows but with
+   the coin avatar + (name, network) stack + ticker chip on the right. */
+.cur-bridge-row-text {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cur-bridge-row-name {
+  font-size: 14px; font-weight: 500; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cur-bridge-row-sub {
+  font-size: 12px; color: var(--ink-3);
+}
+/* Colored chain pill on the token row. Reuses `getNetworkColor` /
+   `getNetworkInk` from the shared registry so the same chain always
+   renders in the same brand hue — same pattern `CoinTrigger.chainBadge`
+   uses, so the picker's right-pane chain identification matches the
+   closed-state trigger pill the user sees in the field stack. */
+.cur-bridge-row-chain {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+.cur-bridge-row-ticker {
+  font-size: 12px; font-weight: 700; color: var(--ink-2);
+  text-transform: uppercase;
+  padding: 3px 7px; border-radius: 6px;
+  background: var(--paper-2);
+  flex-shrink: 0;
+}
+
+.cur-bridge-empty {
+  padding: 28px 12px; text-align: center;
+  font-size: 13px; color: var(--ink-3);
+}
+
+/* ═══ Overlay primitive ═════════════════════════════════════════════════
+   Base layout/visual for `<Overlay>` panels. The component injects
+   z-index inline (from --z-* tokens) so this file only owns geometry +
+   surface treatment. Two stacking modes: anchored popover (no backdrop
+   on desktop) and modal/sheet (centered desktop, full-screen mobile). */
+.overlay-backdrop {
+  background: rgba(15, 15, 20, 0.55);
+  animation: overlay-fade-in 160ms ease-out;
+}
+@keyframes overlay-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.overlay-panel {
+  /* Reset Floating UI's default top:0/left:0 inline styles from leaking
+     visible 0-by-0 frames before geometry resolves. */
+  outline: none;
+}
+
+.overlay-panel-popover {
+  /* Anchored popovers carry no surface of their own — the consumer
+     (.cur-list etc.) brings the background, border, shadow. */
+  background: transparent;
+}
+
+.overlay-panel-modal {
+  width: min(900px, 92vw); height: min(640px, 86vh);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px -28px rgba(0, 0, 0, 0.45),
+              0 0 0 1px var(--line);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+:where(html,body)[data-theme="dark"] .overlay-panel-modal {
+  background: #0F0F14;
+}
+
+/* Mobile full-screen sheet. Overrides both modal & popover sizing —
+   anchored panels become bottom-edge sheets on phones too, because
+   thumb-driven lists need the full width. */
+.overlay-panel-fullscreen {
+  width: 100vw; width: 100dvw;
+  height: 100vh; height: 100dvh;
+  max-width: none; max-height: none;
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  /* Phone Safari address-bar settle — `100dvh` handles dynamic viewport
+     correctly; the `100vh` fallback keeps older WebKit usable. */
+  box-shadow: none;
+}
+:where(html,body)[data-theme="dark"] .overlay-panel-fullscreen {
+  background: #0F0F14;
+}

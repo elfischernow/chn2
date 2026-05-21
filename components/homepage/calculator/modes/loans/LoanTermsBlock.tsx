@@ -1,7 +1,7 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n/client';
-import type { LoanCurrency, LoanEstimateResponse } from '@/lib/api/coin-rabbit';
+import { formatLoanRate, type LoanCurrency, type LoanEstimateResponse } from '@/lib/api/coin-rabbit';
 
 interface LoanTermsBlockProps {
   estimate: LoanEstimateResponse | null;
@@ -35,12 +35,15 @@ export function LoanTermsBlock({ estimate, from, to }: LoanTermsBlockProps) {
   })();
 
   const liquidationPrice = (() => {
-    const raw = estimate?.downLimit;
-    if (!raw) return '—';
+    const formatted = formatLoanRate(estimate?.downLimit);
+    if (!formatted) return '—';
     const base = from?.currentTicker.toUpperCase();
     const quote = to?.currentTicker.toUpperCase();
-    if (!base || !quote) return raw;
-    return `${raw} ${base}/${quote}`;
+    if (!base || !quote) return formatted;
+    // Direction reads as "1 base ≈ X quote" (crypto-priced-in-stable when
+    // collateral is crypto and the loan is a stablecoin — the default
+    // pair after the Loans tab anchor was flipped to BTC/USDT).
+    return `1 ${base} ≈ ${formatted} ${quote}`;
   })();
 
   return (

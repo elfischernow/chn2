@@ -69,6 +69,16 @@ const clearStorage = (flow: string): void => {
   }
 };
 
+/**
+ * Free-function clear. Call from success handlers (signin/google/2FA) so the
+ * backoff bucket doesn't leak across sessions — without this, a user who
+ * exhausted their resends and then logged in via a different path comes back
+ * to a throttled OTP screen.
+ */
+export const clearResendBuckets = (...flows: string[]): void => {
+  for (const flow of flows) clearStorage(flow);
+};
+
 export interface UseResendTimeoutReturn {
   /** Seconds left before the user can resend again. 0 → resend allowed. */
   timeLeft: number;

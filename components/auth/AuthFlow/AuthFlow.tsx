@@ -21,8 +21,11 @@ import {
   validateVerificationCode,
 } from '@/lib/auth/validation';
 import { createT, type TranslationDict } from '@/lib/i18n/createT';
+import { emailVerificationResend } from '@/lib/auth/dal';
+import { clearResendBuckets } from '@/lib/auth/use-resend-timeout';
 
 import { EmailConfirmationForm } from './EmailConfirmationForm';
+import { EntryForm } from './EntryForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { LinkExpiredView } from './LinkExpiredView';
 import { LoginForm } from './LoginForm';
@@ -36,6 +39,7 @@ import { initialState, reducer, type FormName } from './state';
 import {
   performAuthenticateSubmit,
   performChangePasswordSubmit,
+  performEntrySignup,
   performForgotPasswordSubmit,
   performLoginSubmit,
   performRegisterSubmit,
@@ -58,7 +62,7 @@ import { AUTH_ERRORS, AUTH_GOOGLE_ERRORS } from '@/lib/auth/constants';
 
 const TURNSTILE_SITEKEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
-export type InitialForm = 'login' | 'register' | 'reset-password';
+export type InitialForm = 'entry' | 'login' | 'register' | 'reset-password';
 
 interface AuthFlowProps {
   initialForm: InitialForm;
@@ -74,17 +78,22 @@ interface AuthFlowProps {
   isMobile?: boolean;
 }
 
+// The standalone /authorization page renders the unified entry form by
+// default. Legacy `?form=login` / `?form=register` deep-links collapse to
+// the same entry view — there's no separate login/register page anymore.
+// `?form=entry` is accepted for explicitness but is the default and not
+// written back to the URL.
 const FORM_QUERY_TO_NAME: Record<string, FormName> = {
-  login: 'login',
-  register: 'register',
+  entry: 'entry',
+  login: 'entry',
+  register: 'entry',
   forgot: 'forgot-password',
   reset: 'reset-password',
   '2fa': 'security-verification',
 };
 
 const FORM_NAME_TO_QUERY: Partial<Record<FormName, string>> = {
-  login: 'login',
-  register: 'register',
+  // entry is the default form — omitted so the URL stays clean.
   'forgot-password': 'forgot',
   'reset-password': 'reset',
   'security-verification': '2fa',
@@ -243,6 +252,35 @@ export function AuthFlow({
     });
   }, [state, obtainCaptcha, resetCaptcha, track, reportError, redirectAfterAuth]);
 
+  // Entry submit — routes by `state.entryMode`:
+  //   'fresh'          → performLoginSubmit (signin probe). On INVALID_CREDENTIALS
+  //                      the handler flips entryMode to 'suggest-signup'.
+  //   'suggest-signup' → performEntrySignup (single-password signup with
+  //                      the agreement+newsletter from the inline banner).
+  const handleEntrySubmit = useCallback(() => {
+    if (state.entryMode === 'suggest-signup') {
+      void performEntrySignup({
+        state,
+        dispatch,
+        obtainCaptcha,
+        resetCaptcha,
+        track,
+        reportError,
+        onSuccess: redirectAfterAuth,
+      });
+      return;
+    }
+    void performLoginSubmit({
+      state,
+      dispatch,
+      obtainCaptcha,
+      resetCaptcha,
+      track,
+      reportError,
+      onSuccess: redirectAfterAuth,
+    });
+  }, [state, obtainCaptcha, resetCaptcha, track, reportError, redirectAfterAuth]);
+
   const handleRegisterSubmit = useCallback(() => {
     void performRegisterSubmit({
       state,
@@ -283,15 +321,18 @@ export function AuthFlow({
     });
   }, [state, obtainCaptcha, resetCaptcha, track, reportError]);
 
+  // After unification there's only one entry — both "back to login" and "go
+  // create an account" return users to the same unified screen. The fresh
+  // mount also wipes lingering form state.
   const handleSwitchToLogin = useCallback(() => {
     dispatch({ type: 'CLEAR_FORM' });
     router.push(`${localePrefix}/authorization`);
   }, [router, localePrefix]);
 
-  const handleSwitchToRegister = useCallback(() => {
-    dispatch({ type: 'CLEAR_FORM' });
-    router.push(`${localePrefix}/registration`);
-  }, [router, localePrefix]);
+  // Retained for backwards compat with embedded callers (e.g. modal mode in
+  // calculator) that still call onSignUpClick; routes through the unified
+  // entry now that /registration redirects to /authorization.
+  const handleSwitchToRegister = handleSwitchToLogin;
 
   const handleForgotPasswordClick = useCallback(() => {
     dispatch({ type: 'CLEAR_PASSWORDS' });
@@ -335,6 +376,7 @@ export function AuthFlow({
     dispatch({ type: 'SET_GOOGLE_LOADING', value: false });
     dispatch({ type: 'SET_OAUTH_ERROR', error: null });
     track({ category: 'google-auth', action: 'google-success-sign-in' });
+    clearResendBuckets('login-confirm', 'signup-confirm', 'register-confirm');
     redirectAfterAuth();
   }, [redirectAfterAuth, track]);
 
@@ -377,7 +419,7 @@ export function AuthFlow({
           type: 'SET_PASSWORD_ERROR',
           error: 'AUTHORIZATION.OAUTH.GOOGLE_ERROR.EMAIL_ALREADY_EXISTS',
         });
-        dispatch({ type: 'SET_FORM', form: 'login', remember: true });
+        dispatch({ type: 'SET_FORM', form: 'entry', remember: true });
         return;
       }
 
@@ -536,6 +578,34 @@ export function AuthFlow({
         onSuccess={(token) => dispatch({ type: 'SET_CAPTCHA', token })}
       />
 
+      {state.currentForm === 'entry' && (
+        <EntryForm
+          state={state}
+          dispatch={dispatch}
+          t={t}
+          onSubmit={handleEntrySubmit}
+          onForgotPasswordClick={handleForgotPasswordClick}
+          onEmailChange={handleEmailChange}
+          onPasswordChange={handlePasswordChange}
+          socialButtons={
+            <SocialButtons
+              page={state.entryMode === 'suggest-signup' ? 'register' : 'login'}
+              t={t}
+              onGoogleSuccess={handleGoogleSuccess}
+              onGoogleError={handleGoogleError}
+              onGoogleLoadingChange={handleGoogleLoadingChange}
+              onMetamaskClick={handleMetamaskClick}
+              onWalletConnectSuccess={handleWalletConnectSuccess}
+              onWalletConnectTwoFa={handleWalletConnectTwoFa}
+            />
+          }
+        />
+      )}
+      {/* Legacy `?form=login`/`?form=register` deep-links now map to entry
+          (see FORM_QUERY_TO_NAME), so these renders only fire when something
+          else dispatches SET_FORM 'login' or 'register' directly — currently
+          nothing in the standalone flow does. Kept as fallbacks for embedded
+          modal/test contexts. */}
       {state.currentForm === 'login' && (
         <LoginForm
           state={state}
@@ -601,11 +671,16 @@ export function AuthFlow({
       {state.currentForm === 'forgot-password-success' && (
         <SuccessView
           title={t('AUTHORIZATION.EMAIL_TEXTS.CHECK_EMAIL')}
-          description={`
-            ${t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_1')}
-            <span class="sentry-mask">${state.email}</span>
-            ${t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_2')}
-          `}
+          // Email is rendered as a separate JSX node (sentry-mask) instead of
+          // interpolated into an HTML string — guards against malformed emails
+          // breaking out of the description block.
+          description={
+            <>
+              {t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_1')}{' '}
+              <span className="sentry-mask">{state.email}</span>{' '}
+              {t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_2')}
+            </>
+          }
           Icon={<MailSuccessIcon />}
           buttonText={
             state.timerNumber && state.timerNumber > 0
@@ -660,19 +735,31 @@ export function AuthFlow({
       {state.currentForm === 'register-success' && (
         <SuccessView
           title={t('AUTHORIZATION.EMAIL_TEXTS.CHECK_EMAIL')}
-          description={`
-            ${t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_3')}
-            <span class="sentry-mask">${state.email.toLowerCase()}</span>
-            ${t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_4')}
-          `}
+          description={
+            <>
+              {t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_3')}{' '}
+              <span className="sentry-mask">{state.email.toLowerCase()}</span>{' '}
+              {t('AUTHORIZATION.EMAIL_TEXTS.DESCRIPTION_4')}
+            </>
+          }
           Icon={<MailSuccessIcon />}
           buttonText={
             state.timerNumber && state.timerNumber > 0
               ? `${t('AUTHORIZATION.EMAIL_TEXTS.BUTTON_2')} ${t('AUTHORIZATION.IN')}`
               : t('AUTHORIZATION.EMAIL_TEXTS.LINK_EXPIRED_TRY_AGAIN')
           }
-          // Resend handler lands in iter 5 with the unified backoff hook.
-          onButtonClick={() => undefined}
+          onButtonClick={async () => {
+            // Re-trigger /email-verification/resend with a fresh 60s lockout
+            // on the button. Errors are benign — the timer already started, so
+            // we let the user try again after it expires.
+            if (state.timerNumber && state.timerNumber > 0) return;
+            dispatch({ type: 'SET_TIMER', seconds: 60 });
+            try {
+              await emailVerificationResend(state.email);
+            } catch {
+              /* silent — timer already debounces */
+            }
+          }}
           time={state.timerNumber}
           disabled={!!(state.timerNumber && state.timerNumber > 0)}
         />
@@ -755,7 +842,7 @@ export function AuthFlow({
           t={t}
           walletSetUp
           onAuthSuccess={() => {
-            dispatch({ type: 'SET_FORM', form: 'login' });
+            dispatch({ type: 'SET_FORM', form: 'entry' });
           }}
           onTwoFaRequired={() =>
             dispatch({ type: 'SET_FORM', form: 'security-verification', remember: true })
@@ -767,7 +854,7 @@ export function AuthFlow({
         <WalletConnectModal
           t={t}
           onComplete={() => {
-            dispatch({ type: 'SET_FORM', form: 'login' });
+            dispatch({ type: 'SET_FORM', form: 'entry' });
           }}
           onSwitchToLogin={handleSwitchToLogin}
         />

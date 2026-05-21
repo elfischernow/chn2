@@ -1,3 +1,5 @@
+import { TrustpilotLazy } from '@/components/homepage/TrustpilotLazy';
+
 import type { FooterDesktopNavigationProps } from '../types';
 import { WideLanguageDropdown } from '../wide-language-dropdown/wide-language-dropdown';
 import { FooterListItem } from './footer-list-item';
@@ -24,7 +26,6 @@ export const FooterDesktopNavigation = (props: FooterDesktopNavigationProps) => 
     buyCryptoLinks,
     exchangeLinks,
     exchangePairsDesktopColumns,
-    trustpilotLink,
     socialLinksData,
     isDarkTheme,
     currentLanguage,
@@ -117,23 +118,16 @@ export const FooterDesktopNavigation = (props: FooterDesktopNavigationProps) => 
       <div className="social-copyright__mobile">
         <div className="footer--links">
           {!isDarkTheme ? (
-            <div
-              className="trustpilot-widget footer__trustpilot-widget"
-              data-locale="en-US"
-              data-template-id="53aa8807dec7e10d38f59f32"
-              data-businessunit-id="59d561c60000ff0005acd2a4"
-              data-style-height="150px"
-              data-style-width="100%"
-              data-theme="dark"
-            >
-              <a
-                href={trustpilotLink}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-                data-track-outbound={trustpilotLink}
-                aria-label="Trustpilot"
-              />
-            </div>
+            // Lazy, client-only mount of the Mini TrustBox. `ssr: false`
+            // skips the SSR shell entirely — Trustpilot's bootstrap script
+            // owns the node's children post-mount, and there's nothing
+            // for React's hydrator to reconcile against.
+            <TrustpilotLazy
+              template="53aa8807dec7e10d38f59f32"
+              theme="dark"
+              height={150}
+              className="footer__trustpilot-widget"
+            />
           ) : null}
           <span className="separator" />
           <div className="bestchange">
@@ -268,23 +262,12 @@ export const FooterDesktopNavigation = (props: FooterDesktopNavigationProps) => 
             <div className="footer__social-copyright">
               <div className="footer--links">
                 {!isDarkTheme ? (
-                  <div
-                    className="trustpilot-widget footer__trustpilot-widget"
-                    data-locale="en-US"
-                    data-template-id="53aa8807dec7e10d38f59f32"
-                    data-businessunit-id="59d561c60000ff0005acd2a4"
-                    data-style-height="150px"
-                    data-style-width="100%"
-                    data-theme="dark"
-                  >
-                    <a
-                      href={trustpilotLink}
-                      target="_blank"
-                      rel="nofollow noopener noreferrer"
-                      data-track-outbound={trustpilotLink}
-                      aria-label="Trustpilot"
-                    />
-                  </div>
+                  <TrustpilotLazy
+                    template="53aa8807dec7e10d38f59f32"
+                    theme="dark"
+                    height={150}
+                    className="footer__trustpilot-widget"
+                  />
                 ) : null}
                 <div className="bestchange">
                   <div className="icon-bestchange footer--bestchange">

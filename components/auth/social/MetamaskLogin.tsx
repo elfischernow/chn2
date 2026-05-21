@@ -43,11 +43,15 @@ export function MetamaskLogin({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const actionText = registration ? 'Sign Up' : 'Log In';
+  const actionText = registration
+    ? t('AUTHORIZATION.SIGN_UP')
+    : t('AUTHORIZATION.LOG_IN');
 
   const sectionTitle = walletSetUp
     ? t('AUTHORIZATION.SET_UP_WALLET.ADD_WEB3_WALLET', 'Add Web3 wallet')
-    : `${actionText} with Metamask`;
+    : registration
+      ? t('AUTHORIZATION.METAMASK.SECTION_TITLE_REGISTER', 'Sign Up with MetaMask')
+      : t('AUTHORIZATION.METAMASK.SECTION_TITLE_LOGIN', 'Log In with MetaMask');
 
   const message = useMemo(() => {
     return [
@@ -84,7 +88,12 @@ export function MetamaskLogin({
     const secretRes = await metamaskRequest(address);
     const secret = (secretRes.data as { secret?: string } | undefined)?.secret;
     if (!secret) {
-      setError('Failed to get secret');
+      setError(
+        t(
+          'AUTHORIZATION.METAMASK.GET_SECRET_FAILED',
+          "Couldn't reach the MetaMask sign-in service. Please try again.",
+        ),
+      );
       return null;
     }
     const msgParams = [
@@ -96,11 +105,20 @@ export function MetamaskLogin({
       address,
     ]);
     if (!signed || signed.message) {
-      setError(signed?.message ?? 'Signature failed');
+      // Wallet-emitted message (signed?.message) is surfaced verbatim — it's
+      // the user-actionable provider error (e.g. "User rejected request").
+      // Only the catch-all "no signature returned" falls back to i18n copy.
+      setError(
+        signed?.message ??
+          t(
+            'AUTHORIZATION.METAMASK.SIGNATURE_FAILED',
+            'Signature was rejected. Please approve the request in your wallet.',
+          ),
+      );
       return null;
     }
     return { sign: signed.data!, message: msgParams };
-  }, [address, message]);
+  }, [address, message, t]);
 
   const handleClick = useCallback(async () => {
     if (!address) {
@@ -149,20 +167,27 @@ export function MetamaskLogin({
 
       const errorMsg =
         (result.data as { errorData?: { message?: string } })?.errorData?.message ??
-        'Metamask auth failed';
+        t(
+          'AUTHORIZATION.METAMASK.AUTH_FAILED',
+          'MetaMask sign-in failed. Please try again.',
+        );
       setError(errorMsg);
     } catch (err) {
       setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'Metamask auth failed');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('AUTHORIZATION.METAMASK.AUTH_FAILED', 'MetaMask sign-in failed. Please try again.'),
+      );
     }
-  }, [address, sign, walletSetUp, onAuthSuccess, onTwoFaRequired, requestAddress]);
+  }, [address, sign, walletSetUp, onAuthSuccess, onTwoFaRequired, requestAddress, t]);
 
   const buttonText = useMemo(() => {
-    if (isLoading) return 'Pending';
-    if (address && walletSetUp) return 'Access';
+    if (isLoading) return t('AUTHORIZATION.METAMASK.BUTTON_PENDING', 'Pending');
+    if (address && walletSetUp) return t('AUTHORIZATION.METAMASK.BUTTON_ACCESS', 'Access');
     if (address) return actionText;
-    return 'Unlock';
-  }, [address, isLoading, actionText, walletSetUp]);
+    return t('AUTHORIZATION.METAMASK.BUTTON_UNLOCK', 'Unlock');
+  }, [address, isLoading, actionText, walletSetUp, t]);
 
   return (
     <AuthorizationSection title={sectionTitle} className="metamask-login">

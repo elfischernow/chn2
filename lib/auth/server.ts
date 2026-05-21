@@ -1,8 +1,9 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
+import { AUTH_MOCKS_ENABLED } from '../config';
 import type { UserSession } from './dal';
 
 // Server-side `getSession()` for layouts and pages. Hits the upstream
@@ -14,9 +15,31 @@ import type { UserSession } from './dal';
 //
 // Why no localStorage flag like legacy: see edge case E3 in the migration
 // plan. The single source of truth is the upstream's view of the cookie.
+//
+// When `AUTH_MOCKS_ENABLED` is set we short-circuit and read the dev-only
+// `__mock_auth_state` cookie locally instead of round-tripping anywhere —
+// the upstream would 401 every request in that mode anyway because the
+// real session cookie is missing.
 
 const UPSTREAM_BASE_URL =
   process.env.DASHBOARD_API_BASE_URL ?? 'https://vip-api.bento.capital';
+
+const MOCK_USER: UserSession = {
+  id: 'mock-user-id',
+  email: 'mock@changenow.local',
+  kycLevel: 2,
+  transactions: 12,
+  sumsubStatus: 'GREEN',
+  sumsubUpdatedAt: null,
+  sumsubCountries: [],
+  balances: [],
+  isTwoFactorEnabled: false,
+  address: null,
+  subscription: { amlChecksLimit: 0, level: null, nextBillingAt: null, status: null },
+  custody: { isActive: false, partnerId: null, email: null },
+  settings: {},
+  isUserEmailNotConfirmed: false,
+};
 
 const SESSION_TIMEOUT_MS = 5_000;
 
@@ -61,6 +84,15 @@ const mapMe = (raw: unknown): UserSession => {
 };
 
 export const getSession = cache(async (): Promise<UserSession | null> => {
+  // Mock-flag short-circuit. The dev cookie-state switcher writes
+  // `__mock_auth_state=valid` to mark an authed session; any other value
+  // (or its absence) reads as guest.
+  if (AUTH_MOCKS_ENABLED) {
+    const jar = await cookies();
+    const v = jar.get('__mock_auth_state')?.value;
+    return v === 'valid' ? MOCK_USER : null;
+  }
+
   const h = await headers();
   const cookie = h.get('cookie');
   if (!cookie) return null; // Definitely guest — no need to round-trip.

@@ -197,11 +197,76 @@
   box-shadow: 0 1px 3px rgba(15, 15, 20, 0.06);
 }
 
-/* ─── Rate row (Floating / Fixed) ─── */
+/* ─── Rate row (rate text + mode toggles) ───
+   Mirrors the homepage SwapWidget's `.swap-rate` slot: a rate-reference
+   span on the left ("1 BTC ≈ 19.3 ETH" / out-of-range hint / error /
+   skeleton during loading) and the mode-switcher pill cluster pinned to
+   the right. */
 .ex-rate-row {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 8px 4px 0;
+  flex-wrap: wrap;
+}
+
+.ex-rate-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2, #635f7a);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* The text can outgrow the row when the toggles wrap — tabular nums
+     keeps the rate number from shifting as digits change. */
+  font-variant-numeric: tabular-nums;
+}
+
+.ex-rate-bound {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(0, 194, 111, 0.4);
+}
+.ex-rate-bound:hover { text-decoration-color: var(--accent, #00C26F); }
+.ex-rate-bound strong { font-weight: 700; color: var(--ink, #1a1a25); }
+
+.ex-rate-err {
+  color: #E5484D;
+  font-weight: 500;
+}
+
+.ex-rate-skel {
+  display: inline-block;
+  width: 200px; max-width: 100%; height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--ex-input-bd, #ECECF1) 0%,
+    var(--ex-input-bg, #F6F4F8) 50%,
+    var(--ex-input-bd, #ECECF1) 100%
+  );
+  background-size: 200% 100%;
+  animation: ex-rate-skel-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes ex-rate-skel-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.ex-rate-toggles {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .ex-rate-toggle {
@@ -217,10 +282,17 @@
   transition: all 120ms;
 }
 
+/* Active toggle. The previous treatment (ink bg + white text) read fine
+   in light mode but blew out in dark — `--ink` flips to off-white in
+   dark theme, so the pill became white-on-white. The homepage's
+   `.rate-toggle button[aria-pressed]` solves this with the inverse
+   pattern: paper bg + ink text + a faint ring; both legible in both
+   themes without theme branching. */
 .ex-rate-toggle[data-active] {
-  background: var(--ink, #1a1a25);
-  color: #fff;
-  border-color: var(--ink, #1a1a25);
+  background: var(--paper, #fff);
+  color: var(--ink, #1a1a25);
+  border-color: var(--line, #d8d8df);
+  box-shadow: 0 0 0 1px var(--line, #d8d8df);
 }
 
 /* ─── Form fields ─── */
@@ -281,45 +353,293 @@
   color: var(--ex-error);
 }
 
-/* ─── Advanced (refund + promo, collapsible) ─── */
-.ex-advanced {
+/* ─── Promo + Refund row ─── */
+/* Single horizontal row that houses the two collapsed triggers — promo
+   on the left, refund on the right. `flex-wrap: wrap` plus a
+   `flex-basis: 100%` on the expanded states lets either field break
+   onto its own full-width line when the user opens it. Refund's
+   `margin-left: auto` keeps it right-aligned even when promo is hidden
+   (e.g. on the Private tab, where only refund renders). */
+.ex-extras-row {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
 }
 
-.ex-advanced-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.ex-extras-row > .ex-refund-trigger,
+.ex-extras-row > .ex-refund {
+  margin-left: auto;
+}
+
+.ex-extras-row > .ex-refund,
+.ex-extras-row > .ex-promo-inline {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+
+/* ─── Refund disclosure ─── */
+/* Collapsed trigger: plain gray underlined hypertext, no icon, no fill.
+   Reads as a tertiary "if you want it" affordance — the user opts in by
+   clicking the words, not by tapping a styled button. */
+.ex-refund-trigger {
   background: transparent;
   border: 0;
+  padding: 0;
   font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-3, #8a8a98);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ink-3, #8a8a98);
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+.ex-refund-trigger:hover {
+  color: var(--ink, #1a1a25);
+  text-decoration-color: var(--ink, #1a1a25);
+}
+
+/* Refund-address shell (expanded) — header row with title + remove
+   toggle, then the shared `WalletAddressField` underneath. */
+.ex-refund {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ex-refund-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ex-refund-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-2, #635f7a);
-  cursor: pointer;
-  padding: 4px 0;
-  align-self: flex-start;
 }
 
-.ex-advanced-toggle:hover:not(:disabled) {
+.ex-refund-toggle {
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3, #8a8a98);
+  cursor: pointer;
+  padding: 0;
+  transition: color 150ms ease;
+}
+
+.ex-refund-toggle:hover {
   color: var(--ink, #1a1a25);
 }
 
-.ex-advanced-toggle:disabled {
-  cursor: default;
-  opacity: 0.7;
+/* ─── Promo code trigger (collapsed) ─── */
+/* Gradient-only treatment: no border, no background, no underline.
+   Text uses `background-clip: text` against the brand's blue → cyan →
+   green ramp; the inline tag SVG carries the same ramp through its own
+   `<linearGradient>` so the colour story stays unified. Hover bumps the
+   text gradient brightness (filter: saturate) without changing the
+   shape. */
+.ex-promo-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 150ms ease;
 }
 
-.ex-advanced-caret {
-  font-size: 11px;
+.ex-promo-trigger:hover {
+  filter: saturate(1.15) brightness(1.05);
 }
 
-.ex-advanced-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.ex-promo-trigger-text {
+  background-image: var(
+    --chn-gradient-accent,
+    linear-gradient(135deg, #4ea1f5 0%, #5bc0de 50%, #76eab1 100%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Expanded state — one-line input: icon · text · paste button. Shares
+   the `pt-address-input` floating-label colour treatment for invalid
+   states (`data-invalid` flips border + error message), but lays out
+   horizontally instead of stacking label-above-input. */
+.ex-promo-inline {
+  display: grid;
+  /* Four explicit columns: tag-icon · input · validation-status · Paste.
+     A three-column grid (`auto 1fr auto`) was rolling Paste onto a second
+     row because the status slot already occupies the third track. */
+  grid-template-columns: auto 1fr auto auto;
+  grid-auto-rows: auto;
+  align-items: center;
+  gap: 10px;
+  /* Narrower than `.pt-address-field` (8/14 vs 14/18) — the promo is a
+     single-line input with no floating label, so it sits as a compact
+     shorter sibling of the address field. */
+  padding: 6px 8px 6px 14px;
+  /* `min-height` (not `height`) so the wrapper grows when an error row
+     spans below — a fixed height clips it through the bottom border. */
+  min-height: 44px;
+  /* Match `.pt-address-field` surface: translucent paper-2 wash + inset
+     1px hairline instead of a solid border, so the two stacked fields
+     read as a single material family. */
+  border-radius: 14px;
+  border: 0;
+  background: rgba(246, 244, 248, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(15, 15, 20, 0.04);
+  transition: background 150ms ease, box-shadow 150ms ease;
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-inline {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Pin the top-row items to row 1 explicitly so the error message
+   (`.ex-promo-error`, `grid-column: 1 / -1`) lands cleanly on row 2 even
+   when one of the row-1 items is conditionally removed. */
+.ex-promo-icon,
+.ex-promo-input,
+.ex-promo-status,
+.ex-promo-paste {
+  grid-row: 1;
+}
+
+.ex-promo-inline:focus-within {
+  background: rgba(246, 244, 248, 1);
+  box-shadow: inset 0 0 0 1px rgba(15, 15, 20, 0.12);
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-inline:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+}
+
+.ex-promo-inline[data-invalid] {
+  background: rgba(216, 0, 39, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.2);
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-inline[data-invalid] {
+  background: rgba(216, 0, 39, 0.10);
+  box-shadow: inset 0 0 0 1px rgba(216, 0, 39, 0.3);
+}
+
+.ex-promo-icon {
+  flex-shrink: 0;
+}
+
+.ex-promo-input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink, #1a1a25);
+  width: 100%;
+  text-transform: uppercase;
+}
+
+.ex-promo-input::placeholder {
+  color: var(--ink-3, #8a8a98);
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+/* Pill Paste button — same chrome as `.pt-address-paste` so the two
+   stacked fields share the action language. */
+.ex-promo-paste {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.ex-promo-paste:hover {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink-3);
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-paste {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-paste:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+}
+
+.ex-promo-error {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--ex-error, #e2585a);
+  margin-top: 2px;
+}
+
+/* Inline status slot — sits between the input and the Paste button. Hosts
+   the loader spinner while the upstream validation is in flight, or a
+   green check once the code is confirmed valid. Same column track as
+   the Paste button so the row width doesn't shift when state changes. */
+.ex-promo-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--ink-3, #8a8a98);
+}
+
+.ex-promo-spinner {
+  animation: ex-promo-spin 0.9s linear infinite;
+}
+
+@keyframes ex-promo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Valid state — flips the border to the brand green. The discount %
+   itself surfaces on the `.fees-pill` slot of the receive field (in
+   place of "Fees included") — see `FeesPill.tsx`. We intentionally do
+   NOT duplicate it here as a badge under the input. */
+.ex-promo-inline[data-valid] {
+  border-color: #00c26f;
+  background: rgba(0, 194, 111, 0.04);
+}
+
+:where(html, body)[data-theme='dark'] .ex-promo-inline[data-valid] {
+  background: rgba(0, 194, 111, 0.08);
 }
 
 /* ─── ToS ─── */
@@ -399,6 +719,64 @@
   font-size: 13px;
   color: var(--ex-error);
   margin: 0;
+}
+
+/* Persistent banner above the CTA — surfaces estimate / out-of-range /
+   submit error in one slot. `warn` for soft state (out-of-range), `error`
+   for hard failures (estimate down, submit rejected). */
+.ex-cta-banner {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ex-cta-banner-error {
+  background: rgba(232, 76, 61, 0.08);
+  color: var(--ex-error);
+}
+
+.ex-cta-banner-warn {
+  background: rgba(255, 165, 60, 0.1);
+  color: #b06600;
+}
+
+.ex-cta-banner-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Per-row admin warning for the destination currency (legacy
+   `to.warningTo`). Sits between the field stack and the agreements. */
+.ex-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 165, 60, 0.1);
+  color: #6b4400;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Legal copy for authed fiat users — replaces the third-party agreement
+   checkbox that unauth users see. */
+.ex-fiat-terms {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2, #635f7a);
+  text-align: center;
+}
+
+.ex-fiat-terms a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 /* ─── Cashback button (matches the homepage's "save $X with Pro") ─── */

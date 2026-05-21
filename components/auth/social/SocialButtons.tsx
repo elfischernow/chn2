@@ -47,7 +47,7 @@ export function SocialButtons({
       <div className="social-buttons">
         <WalletConnectButton
           t={t}
-          title="Wallet Connect"
+          title={t('AUTHORIZATION.WALLET_CONNECT.BUTTON_LABEL', 'WalletConnect')}
           onAuthSuccess={onWalletConnectSuccess}
           onTwoFaRequired={onWalletConnectTwoFa}
           onError={setWcError}
@@ -59,7 +59,9 @@ export function SocialButtons({
             onClick={onMetamaskClick}
           >
             <img src="/images/login/metamask.svg" alt="metamask" />
-            <span className="social-buttons__text">Metamask</span>
+            <span className="social-buttons__text">
+              {t('AUTHORIZATION.METAMASK.BRAND_LABEL', 'MetaMask')}
+            </span>
           </button>
         )}
         <GoogleAuthButton

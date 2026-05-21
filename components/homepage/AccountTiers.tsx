@@ -27,7 +27,7 @@ export function AccountTiers() {
       <div className="tiers-grid">
         <article className="tier-card pro">
           <div className="tier-tag">For everyone</div>
-          <h3 className="tier-h">Pro<br />account</h3>
+          <h3 className="tier-h">Pro account</h3>
           <p className="tier-sub">
             Free upgrade for verified users. Better rates, deeper features, full history — at no
             extra cost.
@@ -41,7 +41,7 @@ export function AccountTiers() {
         </article>
         <article className="tier-card vip">
           <div className="tier-tag">From $100k volume</div>
-          <h3 className="tier-h">VIP<br />tier</h3>
+          <h3 className="tier-h">VIP tier</h3>
           <p className="tier-sub">
             For serious capital. White-glove service, custom liquidity, real humans on call.
           </p>

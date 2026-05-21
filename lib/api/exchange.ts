@@ -10,6 +10,7 @@
 import { SITE_URL, VIP_API_BASE } from '@/lib/config';
 
 import { getNowUsdPriceClient } from './now-price.client';
+import type { PromoCodeValidation } from './promo-code';
 
 export type RateFlow = 'standard' | 'fixed-rate';
 export type EstimateType = 'direct' | 'reverse';
@@ -27,6 +28,20 @@ export interface EstimateRequest {
   flow?: RateFlow;
   type?: EstimateType;
   signal?: AbortSignal;
+  /**
+   * Upstream `source` tag. When omitted, the URL builder picks `'site'`
+   * for ordinary swap pairs and `'private-transfers'` for same-asset on
+   * the same network. Bridge mode passes `'bridge'` so the upstream
+   * routes the request through its cross-chain liquidity path.
+   */
+  source?: string;
+  /**
+   * Forwarded to the upstream as `promoCode=…` — when the code resolves
+   * to a real discount the upstream returns a `toAmount` already adjusted
+   * for the user's promo (so the calculator displays the correct receive
+   * amount). Mirrors legacy `use-dashboard-next-exchange-estimate.js`.
+   */
+  promoCode?: string;
 }
 
 /** A single on-ramp provider quoted for the current pair. */
@@ -40,6 +55,13 @@ export interface EstimateProvider {
   maxAmount: number | null;
   /** Marked by the upstream as the default pick for this pair. */
   isRecommended: boolean;
+  /**
+   * Upstream "the destination chain's withdrawal fee is unusually large
+   * compared to the trade size" flag. Surfaces a confirmation modal on
+   * submit so the user can bail before paying out a too-thin amount.
+   * Mirrors legacy `provider.isHighNetworkFee`.
+   */
+  isHighNetworkFee: boolean;
 }
 
 export interface EstimateResponse {
@@ -71,6 +93,23 @@ export interface EstimateResponse {
   cashbackUsd: number | null;
   /** Available providers (fiat on-ramps). Empty for crypto-crypto pairs. */
   providers: EstimateProvider[];
+  /**
+   * Aggregate "high network fees" flag — true when ANY provider in the
+   * estimate response (or the upstream `summary`) carries the warning.
+   * Drives the confirmation modal on `/exchange` submit.
+   */
+  isHighNetworkFee: boolean;
+  /**
+   * Upstream's verdict on the `promoCode` query param, lifted from the
+   * recommended provider's `promoCode` block. `null` when no code was
+   * sent. Legacy `estimatePromoCodeSelector` reads the exact same shape —
+   * see `legacy-projects/.../redux-store/exchange-calculator/selectors.js`.
+   *
+   * The UI gates the strikethrough / highlight treatment + the "X% Promo
+   * applied" pill on `promoCode?.isValid === true && !isExpired &&
+   * usesLeft !== 0`.
+   */
+  promoCode: PromoCodeValidation | null;
 }
 
 export interface EstimateError {
@@ -101,8 +140,20 @@ interface UpstreamProvider {
     depositFee: number | null;
   };
   cashback?: string | number | null;
+  isHighNetworkFee?: boolean;
   // Sometimes a structured envelope, sometimes a plain string.
   error: unknown;
+  promoCode?: {
+    hash?: string | null;
+    isValid?: boolean;
+    isExpired?: boolean;
+    type?: string | null;
+    maxUses?: number;
+    uses?: number;
+    usesLeft?: number;
+    error?: unknown;
+    message?: string | null;
+  } | null;
 }
 
 interface UpstreamSummary {
@@ -111,6 +162,7 @@ interface UpstreamSummary {
   maxAmount: number | null;
   estimationFrom?: string | null;
   estimationFromLabel?: string | null;
+  isHighNetworkFee?: boolean;
 }
 
 interface UpstreamResponse {
@@ -153,12 +205,15 @@ const buildUpstreamUrl = (path: string, req: EstimateRequest): URL => {
   u.searchParams.set('toNetwork', toNetwork);
   u.searchParams.set('type', type);
   u.searchParams.set('flow', flow);
-  // Same ticker on the same network = private transfer. Mirror the legacy
-  // `/private-transfers` SPA's `source=private-transfers` so the upstream's
-  // same-asset path quotes a real fixed-rate fee. Cross-network same-ticker
-  // (USDT-TRX → USDT-ETH) and crypto-crypto pairs go through `site`.
+  // Source resolution priority:
+  //   1. Explicit caller override (`req.source` — Bridge passes `'bridge'`).
+  //   2. Same ticker on the same network → `'private-transfers'` (mirror the
+  //      legacy `/private-transfers` SPA so the upstream same-asset path
+  //      quotes a real fixed-rate fee).
+  //   3. Otherwise `'site'` (standard Swap, cross-network same-ticker, etc.).
   const isPrivateTransfer = from === to && fromNetwork === toNetwork;
-  u.searchParams.set('source', isPrivateTransfer ? 'private-transfers' : 'site');
+  const source = req.source ?? (isPrivateTransfer ? 'private-transfers' : 'site');
+  u.searchParams.set('source', source);
   if (type === 'direct' && req.fromAmount != null) {
     u.searchParams.set('fromAmount', String(req.fromAmount));
   }
@@ -170,6 +225,7 @@ const buildUpstreamUrl = (path: string, req: EstimateRequest): URL => {
   // it to a transaction at submit time. Same flag unlocks the same-asset
   // (private-transfer) path.
   if (flow === 'fixed-rate') u.searchParams.set('useRateId', 'true');
+  if (req.promoCode) u.searchParams.set('promoCode', req.promoCode);
   return u;
 };
 
@@ -267,7 +323,44 @@ export async function fetchEstimate(req: EstimateRequest): Promise<EstimateRespo
       maxAmount: toNumber(pr.maxAmount),
       isRecommended:
         !!recommendedType && (pr.type ?? '').toLowerCase() === recommendedType,
+      isHighNetworkFee: pr.isHighNetworkFee === true,
     }));
+  // Aggregate flag — legacy `isHighNetworkFeesSelector` checks any provider.
+  // Summary-level field is sometimes set even when individual providers
+  // don't carry it, so fall back to the summary as well.
+  const isHighNetworkFee =
+    providers.some((p) => p.isHighNetworkFee) ||
+    data.summary?.isHighNetworkFee === true;
+
+  // Lift the recommended provider's promo-code verdict. Legacy reads from
+  // the same provider that `summary.estimationFrom` points at — match that
+  // so the "Promo applied" pill agrees with the displayed receive amount
+  // (which is also the recommended provider's quote). Sending no
+  // `promoCode` to the upstream leaves this `null`.
+  const promoCodeFromProvider: PromoCodeValidation | null = (() => {
+    if (!req.promoCode) return null;
+    const src = provider.promoCode;
+    if (!src) return null;
+    const hasErr = src.error === true || typeof src.error === 'string';
+    const errMsg =
+      typeof src.error === 'string'
+        ? src.error
+        : typeof src.message === 'string'
+          ? src.message
+          : hasErr
+            ? 'invalid'
+            : null;
+    return {
+      hash: src.hash ?? req.promoCode,
+      isValid: src.isValid === true,
+      isExpired: src.isExpired === true,
+      type: src.type ?? null,
+      maxUses: src.maxUses ?? 0,
+      uses: src.uses ?? 0,
+      usesLeft: src.usesLeft ?? 0,
+      error: errMsg,
+    };
+  })();
 
   let cashbackUsd: number | null = null;
   if (cashbackRes && cashbackRes.ok && nowUsdPrice && nowUsdPrice > 0) {
@@ -300,6 +393,8 @@ export async function fetchEstimate(req: EstimateRequest): Promise<EstimateRespo
     depositFee: toNumber(provider.custom.depositFee),
     cashbackUsd,
     providers,
+    isHighNetworkFee,
+    promoCode: promoCodeFromProvider,
   };
 }
 

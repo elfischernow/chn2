@@ -1,4 +1,4 @@
-import { SITE_URL } from '@/lib/config';
+import { CN_SITE_URL } from '@/lib/config';
 
 import { VideoTrailer } from './VideoTrailer';
 
@@ -139,7 +139,7 @@ export function PressBlock() {
       </div>
 
       <div className="pr-foot">
-        <a className="pr-foot-link" href={`${SITE_URL}/press`}>
+        <a className="pr-foot-link" href={`${CN_SITE_URL}/press`}>
           More press coverage →
         </a>
       </div>

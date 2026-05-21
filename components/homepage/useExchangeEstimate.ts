@@ -28,6 +28,17 @@ interface Args {
    *  (sender pays X, recipient gets X minus fees on the same chain) and
    *  needs a real fee quote. */
   allowSameAsset?: boolean;
+  /** Optional `source` tag forwarded to the upstream estimator. Bridge
+   *  mode passes `'bridge'` so the upstream routes through its cross-chain
+   *  liquidity path; standard Swap leaves this `undefined` and lets the
+   *  DAL default to `'site'`. */
+  source?: string;
+  /** Validated promo code forwarded as `promoCode=…` on the estimate query.
+   *  When set + valid the upstream returns the discounted `toAmount`. Pass
+   *  the trimmed 12-char code only when the upstream validation succeeded;
+   *  the receive-amount comparison ("strikethrough non-promo vs. live
+   *  discounted") relies on this. */
+  promoCode?: string;
 }
 
 interface State {
@@ -65,6 +76,8 @@ export function useExchangeEstimate({
   flow,
   type,
   allowSameAsset = false,
+  source,
+  promoCode,
 }: Args): State {
   const [state, setState] = useState<State>({
     estimate: null,
@@ -126,6 +139,8 @@ export function useExchangeEstimate({
           ...(type === 'direct' ? { fromAmount: numeric } : { toAmount: numeric }),
           flow,
           type,
+          source,
+          promoCode,
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
@@ -161,7 +176,7 @@ export function useExchangeEstimate({
       if (refreshRef.current) clearInterval(refreshRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [from, to, fromNetwork, toNetwork, amount, flow, type, allowSameAsset]);
+  }, [from, to, fromNetwork, toNetwork, amount, flow, type, allowSameAsset, source, promoCode]);
 
   return state;
 }

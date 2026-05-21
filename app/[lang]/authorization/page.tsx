@@ -93,10 +93,10 @@ const renderAuthGate = async (
 export default async function AuthorizationPage(props: PageProps) {
   const sp = await props.searchParams;
   // `?resetToken` from email — pre-mount the reset form. E21 fix: empty / non-string
-  // tokens fall back to LOGIN; the reset-password submit handler refuses to fire
+  // tokens fall back to entry; the reset-password submit handler refuses to fire
   // without a real token.
   const resetTokenRaw =
     typeof sp.resetToken === 'string' ? sp.resetToken : null;
-  const initial: InitialForm = resetTokenRaw ? 'reset-password' : 'login';
+  const initial: InitialForm = resetTokenRaw ? 'reset-password' : 'entry';
   return renderAuthGate(initial, props);
 }

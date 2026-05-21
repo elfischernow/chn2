@@ -69,8 +69,12 @@ const NETWORK_COLORS: Readonly<Record<string, string>> = {
 const DEFAULT_NETWORK_COLOR = '#B2BFD0';
 
 // Networks whose brand color is light enough that white text fails
-// contrast — switch to dark text on these.
-const LIGHT_BG_NETWORKS = new Set(['bsc', 'bnb', 'sol', 'rune', 'algo', 'hyper']);
+// contrast — switch to dark text on these. `sol`'s `#9945FF` is dark
+// enough for white text (~4.6:1) and matches Solana's own brand
+// treatment, so it stays out of this set even though it sits in the
+// mid-luminance range. `algo` is intentionally absent too — its brand
+// is `#000000` (black), so white text is the only legible choice.
+const LIGHT_BG_NETWORKS = new Set(['bsc', 'bnb', 'rune', 'hyper']);
 
 /**
  * Returns the brand background color for a network ticker. Falls back to

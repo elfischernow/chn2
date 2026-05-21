@@ -250,6 +250,53 @@ export async function fetchLoanEstimate(req: LoanEstimateRequest): Promise<LoanE
   };
 }
 
+// ─── Loan-rate formatter ───────────────────────────────────────────────
+//
+// The upstream returns `down_limit` as a raw string with whatever precision
+// it computed internally (e.g. `"33476.123456789012"`). Rendering that as-
+// is gives the "wild tails" the design caught — too many decimals, no
+// thousands separators, no client-favoured rounding. This helper turns it
+// into a clean display string with three rules:
+//
+//   1. **Precision scales with magnitude.** A USDT-per-BTC liquidation
+//      price reads better at 2 decimals (`33,476.13`); a USDT-per-DOGE
+//      one needs 4-6 (`0.087612`). The buckets mirror the legacy SPA's
+//      `formatPriceTickSize` defaults so identical pairs read the same
+//      number of digits across the new and old surfaces.
+//
+//   2. **Round UP (ceil) for client safety.** "Price down limit" is the
+//      liquidation threshold — at this price the collateral auto-sells.
+//      Displaying the threshold slightly higher than the upstream value
+//      tells the user "expect liquidation a touch sooner than the math
+//      strictly says", which is the conservative direction: actual
+//      liquidation only triggers at the higher real price, never lower,
+//      so the user is never surprised. Same convention the legacy
+//      `formatPriceDownLimit` mapper used.
+//
+//   3. **Locale-aware grouping.** `toLocaleString('en-US')` adds the
+//      comma thousands-separators the design wants ("33,476.13" not
+//      "33476.13").
+export function formatLoanRate(raw: string | number | null | undefined): string | null {
+  if (raw == null) return null;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return typeof raw === 'string' ? raw : null;
+
+  // Decimals bucket. Mirrors the price-tick conventions across the legacy
+  // calculator: chunky numbers stay 2-decimal, sub-dollar prices get the
+  // tail they need to stay distinguishable.
+  const abs = Math.abs(n);
+  const decimals = abs >= 1000 ? 2 : abs >= 1 ? 4 : abs >= 0.01 ? 6 : 8;
+
+  // Ceil to `decimals` places — see rule (2) above.
+  const factor = 10 ** decimals;
+  const ceiled = Math.ceil(n * factor) / factor;
+
+  return ceiled.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 // ─── Deep-link builder ─────────────────────────────────────────────────
 
 /**

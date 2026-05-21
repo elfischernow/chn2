@@ -1,12 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
-const PROMO_CODE_FORMAT = /^[A-Z0-9]{12}$/;
+import {
+  type PromoCodeValidation,
+  isPromoCodeFormatValid,
+} from '@/lib/api/promo-code';
 
 interface PromoCodeFieldProps {
   value: string;
   onChange: (next: string) => void;
+  /** Upstream validation state for the current code. `null` when no
+   *  validation is in-flight (e.g. format invalid, code cleared). */
+  validation: PromoCodeValidation | null;
+  isValidating: boolean;
 }
 
 /**
@@ -17,12 +24,24 @@ interface PromoCodeFieldProps {
  * state renders a single-line input with the same gradient icon + paste
  * button.
  *
- * Validation is local-format-only (`^[A-Z0-9]{12}$`, matches legacy
- * `isPromoCodeValid`); the upstream is the source of truth on whether
- * the code is actually valid / unexpired / has uses left, and
- * `createTransaction` forwards the value at submit time.
+ * Validation happens in two stages, mirroring legacy
+ * `new-stepper-promo-code.tsx`:
+ *   1. Local format check (`^[A-Z0-9]{12}$`) — fires immediately on blur.
+ *   2. Upstream `/promo-codes/{hash}` lookup — surfaces the loader while
+ *      in flight, a check on success, and a contextual warning on
+ *      expiry / no uses left / unknown code.
+ *
+ * The upstream is the source of truth on whether the code is actually
+ * valid / unexpired / has uses left; `createTransaction` forwards the
+ * value at submit time regardless (the API rejects an invalid code so we
+ * never silently keep a bogus promo around).
  */
-export function PromoCodeField({ value, onChange }: PromoCodeFieldProps) {
+export function PromoCodeField({
+  value,
+  onChange,
+  validation,
+  isValidating,
+}: PromoCodeFieldProps) {
   // Auto-open when the field already has a value — restoring from
   // session-storage or a deep-link shouldn't hide the input.
   const [open, setOpen] = useState(value.length > 0);
@@ -30,7 +49,28 @@ export function PromoCodeField({ value, onChange }: PromoCodeFieldProps) {
 
   const trimmed = value.trim();
   const formatInvalid =
-    touched && trimmed.length > 0 && !PROMO_CODE_FORMAT.test(trimmed);
+    touched && trimmed.length > 0 && !isPromoCodeFormatValid(trimmed);
+
+  const isFetching = !!trimmed && isPromoCodeFormatValid(trimmed) && isValidating;
+  const upstreamValid =
+    validation != null &&
+    validation.isValid &&
+    !validation.isExpired &&
+    validation.usesLeft !== 0;
+
+  // Warning copy — first match wins. Mirrors legacy `warningText` chain.
+  const upstreamWarning = (() => {
+    if (!trimmed || !isPromoCodeFormatValid(trimmed)) return null;
+    if (!validation || isValidating) return null;
+    if (validation.error) return 'Promo code is invalid';
+    if (validation.isExpired) return 'Promo code has expired';
+    if (validation.usesLeft === 0) return 'Promo code has no uses left';
+    if (!validation.isValid) return 'Promo code is invalid';
+    return null;
+  })();
+
+  const showError = formatInvalid || (!!upstreamWarning && touched);
+  const errorText = formatInvalid ? 'Promo code is invalid' : upstreamWarning;
 
   const pasteFromClipboard = async () => {
     try {
@@ -57,7 +97,8 @@ export function PromoCodeField({ value, onChange }: PromoCodeFieldProps) {
   return (
     <div
       className="ex-promo-inline"
-      data-invalid={formatInvalid || undefined}
+      data-invalid={showError || undefined}
+      data-valid={upstreamValid || undefined}
     >
       <PromoTagIcon />
       <input
@@ -73,18 +114,32 @@ export function PromoCodeField({ value, onChange }: PromoCodeFieldProps) {
         autoComplete="off"
         maxLength={12}
         aria-label="Promo code"
-        aria-invalid={formatInvalid || undefined}
+        aria-invalid={showError || undefined}
       />
-      <button
-        type="button"
-        className="ex-promo-paste"
-        onClick={pasteFromClipboard}
-      >
-        Paste
-      </button>
-      {formatInvalid && (
+      <span className="ex-promo-status" aria-hidden>
+        {isFetching ? (
+          <PromoSpinner />
+        ) : upstreamValid ? (
+          <PromoCheckIcon />
+        ) : null}
+      </span>
+      {!upstreamValid && (
+        <button
+          type="button"
+          className="ex-promo-paste"
+          onClick={pasteFromClipboard}
+        >
+          Paste
+        </button>
+      )}
+      {/* No "X% Promo applied" badge under the field — the discount size
+          renders on the TO-field's `.fees-pill` (in place of "Fees included"),
+          and the strikethrough non-promo amount sits in the receive box.
+          Duplicating it here would be the "in addition" treatment the legacy
+          /exchange explicitly avoids. */}
+      {showError && errorText && (
         <span className="ex-promo-error" role="alert">
-          Promo code is invalid
+          {errorText}
         </span>
       )}
     </div>
@@ -95,13 +150,20 @@ export function PromoCodeField({ value, onChange }: PromoCodeFieldProps) {
  * Tag icon — shape lifted from the legacy `new-stepper/purple-tag.svg`,
  * gradient stops retinted to the brand's blue → cyan → green ramp so it
  * matches the text gradient on the trigger. Inline-rendered so the icon
- * ships with the bundle (no extra request) and the gradient id is
- * randomised per call so multiple instances on the page don't share a
- * `<linearGradient>` definition.
+ * ships with the bundle (no extra request).
+ *
+ * The gradient `<defs id>` needs to be unique per instance (otherwise a
+ * second icon on the page would re-use the first's `<linearGradient>`
+ * and any later style change would bleed between them). We use
+ * `React.useId()` — the previous module-level counter was a hydration
+ * mismatch in waiting: SSR and the client increment it on different
+ * schedules (the SSR pass renders every instance once before the client
+ * mounts; the client then re-renders during hydration), so the server
+ * shipped `promo-tag-grad-8` while the client produced `promo-tag-grad-2`
+ * and React rejected the hydration.
  */
-let promoIconIdSeq = 0;
 function PromoTagIcon() {
-  const id = `promo-tag-grad-${++promoIconIdSeq}`;
+  const id = `promo-tag-grad-${useId()}`;
   return (
     <svg
       className="ex-promo-icon"
@@ -131,6 +193,49 @@ function PromoTagIcon() {
           <stop offset="1" stopColor="#76EAB1" />
         </linearGradient>
       </defs>
+    </svg>
+  );
+}
+
+function PromoSpinner() {
+  return (
+    <svg
+      className="ex-promo-spinner"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="22 18"
+      />
+    </svg>
+  );
+}
+
+function PromoCheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M3.5 8.5l3 3 6-6"
+        stroke="#00c26f"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
