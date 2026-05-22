@@ -10,6 +10,18 @@ const EN_PREFIX_PATTERN = /^\/en(\/|$)/;
 // `/buy/btc`, `/buy/usd/btc`, plus their locale-prefixed variants.
 const REGISTRY_PATTERN = /^(?:\/[a-z]{2,3})?\/(?:currencies|buy)(?:\/|$)/;
 
+// Demo-only gate. Hardcoded on purpose — remove when demo is over.
+const DEMO_AUTH_EXPECTED = `Basic ${Buffer.from('chnw:123qweasd!?').toString('base64')}`;
+
+function demoAuthChallenge(): NextResponse {
+  return new NextResponse('Authentication required', {
+    status: 401,
+    headers: {
+      'WWW-Authenticate': 'Basic realm="changenow demo", charset="UTF-8"',
+    },
+  });
+}
+
 /**
  * Strip the locale prefix from a path so it can be looked up in the
  * locale-agnostic URL Registry. `/ru/currencies/btc` → `/currencies/btc`,
@@ -31,6 +43,10 @@ export async function proxy(req: NextRequest) {
     pathname.includes('.')
   ) {
     return NextResponse.next();
+  }
+
+  if (req.headers.get('authorization') !== DEMO_AUTH_EXPECTED) {
+    return demoAuthChallenge();
   }
 
   if (EN_PREFIX_PATTERN.test(pathname)) {
